@@ -22,6 +22,7 @@ Single-owner paint and hardware shop: inventory, GST invoicing, customers and du
 14. **Deactivate, never delete** records with history (products, companies, customers, brokers, employees).
 
 ## Code structure and style
+   - All API URLs end with a trailing slash (for example /api/v1/auth/login/). Blueprint paths written without the slash mean the same endpoint. Missing-slash requests must return a clean 404 in the standard error format, never a 500.
 - Django apps under `backend/apps/`: `core`, `accounts`, `catalog`, `stock`, `purchasing`, `parties`, `billing`, `commissions`, `hr`, `finance`, `analytics`. Shared helpers in `backend/common/`.
 - **Thin views, logic in services.** Pattern: `models.py`, `services.py` (writes and business rules), `selectors.py` (read queries), `serializers.py`, `views.py`, `urls.py`, `tests/`.
 - Business calculations are **pure functions** where possible (`calc.py`) so they can be unit-tested without a database.

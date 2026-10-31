@@ -58,16 +58,16 @@ THIRD_PARTY_APPS = [
 
 LOCAL_APPS = [
     "apps.core",
-    # 'apps.accounts',
-    # 'apps.catalog',
-    # 'apps.stock',
-    # 'apps.purchasing',
-    # 'apps.parties',
-    # 'apps.billing',
-    # 'apps.commissions',
-    # 'apps.hr',
-    # 'apps.finance',
-    # 'apps.analytics',
+    "apps.accounts",
+    "apps.catalog",
+    "apps.stock",
+    "apps.purchasing",
+    "apps.parties",
+    "apps.billing",
+    "apps.commissions",
+    "apps.hr",
+    "apps.finance",
+    "apps.analytics",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -175,12 +175,13 @@ REST_FRAMEWORK = {
         "rest_framework.filters.SearchFilter",
         "rest_framework.filters.OrderingFilter",
     ),
-    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
+    "DEFAULT_PAGINATION_CLASS": "common.pagination.StandardPagination",
     "PAGE_SIZE": 25,
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DATETIME_FORMAT": "%Y-%m-%dT%H:%M:%S.%fZ",
     "DATE_FORMAT": "%Y-%m-%d",
     "COERCE_DECIMAL_TO_STRING": True,
+    "EXCEPTION_HANDLER": "common.exceptions.custom_exception_handler",
 }
 
 SIMPLE_JWT = {

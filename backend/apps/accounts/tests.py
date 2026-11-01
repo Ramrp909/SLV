@@ -424,6 +424,44 @@ class TestAuthEndpoints(TestCase):
 
         self.assertTrue(hasattr(LoginView, "throttle_classes"))
 
+    def test_login_with_trailing_slash_works(self):
+        """Test POST /api/v1/auth/login/ works with trailing slash."""
+        response = self.client.post(
+            "/api/v1/auth/login/",
+            {"username": "owner", "password": "SecurePass123!"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("access", response.json())
+
+    def test_login_without_trailing_slash_returns_404(self):
+        """Test POST /api/v1/auth/login (no slash) returns 404 with standard error format."""
+        response = self.client.post(
+            "/api/v1/auth/login",
+            {"username": "owner", "password": "SecurePass123!"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        data = response.json()
+        self.assertEqual(data["code"], "NOT_FOUND")
+        self.assertIn("message", data)
+        self.assertIn("fields", data)
+
+    def test_health_with_trailing_slash_works(self):
+        """Test GET /api/v1/health/ works with trailing slash."""
+        response = self.client.get("/api/v1/health/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.json(), {"status": "ok"})
+
+    def test_health_without_trailing_slash_returns_404(self):
+        """Test GET /api/v1/health (no slash) returns 404 with standard error format."""
+        response = self.client.get("/api/v1/health")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        data = response.json()
+        self.assertEqual(data["code"], "NOT_FOUND")
+        self.assertIn("message", data)
+        self.assertIn("fields", data)
+
 
 @override_settings(DEBUG=False)
 class TestAuthEndpointsProduction(TestCase):

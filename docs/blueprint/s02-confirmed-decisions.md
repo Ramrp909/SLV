@@ -15,7 +15,7 @@
 | 9 | Employee salary | Calendar days is the default basis; attendance, leave, bonus and deductions are configurable (6.14) |
 | 10 | Overpayments | Payments above the outstanding due are blocked in Version 1; a customer advance ledger is a future enhancement (6.8) |
 | 11 | Invoice printing | A4 in Version 1; 80 mm thermal printing deferred (9.4) |
-| 12 | Invoice numbering | Starts at `INV/26-27/0001` unless existing paper numbers must be continued (starting number is a setting); server-generated, gap-free, never reused after cancellation (6.11) |
+| 12 | Invoice numbering | **The invoice date is part of the number**, for example `INV/261105/0042` (prefix / date as YYMMDD / running serial). The serial runs consecutively through the financial year and starts at 0001 unless existing paper numbers are continued (starting number is a setting). Server-generated, gap-free, never reused after cancellation, at most 16 characters (6.11). *Updated by the owner on 1 November 2026; replaces the earlier `INV/26-27/0001` style.* |
 | 13 | Product category | Optional. Required product fields: company, product type, product code, pack size and unit (6.1) |
 | 14 | Manual invoice lines | Non-stock manual lines with an optional internal cost for profit reporting (15.6) |
 

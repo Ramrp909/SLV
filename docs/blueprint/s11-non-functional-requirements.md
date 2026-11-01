@@ -31,7 +31,7 @@
 - GST snapshots: change a product's GST rate and HSN after issue; the invoice, credit notes and reports must not change.
 - Commission: 10,000 x 10% = 1,000 on the saved grand total; invoice-specific override; snapshot unchanged when the broker default changes; proportional reversal on partial returns with the remainder rule; full reversal on cancellation; negative broker balance after reversal; commission counted once as an expense (payouts and reversals never double-counted).
 - Profit: gross profit excludes GST; profit after commission; net profit after expenses; manual line without cost marked **profit incomplete** (never zero); manual line with cost; returns reduce revenue, COGS and commission.
-- Numbering: sequence, financial year from invoice date, configurable starting number, cancelled numbers never reused, concurrent requests.
+- Numbering: format `PREFIX/YYMMDD/NNNN` uses the invoice date, serial continues across days within a financial year (no daily restart), financial year from invoice date, configurable starting number, back-dated invoice gets the next serial with its own date, length never above 16, cancelled numbers never reused, concurrent requests.
 - Dates: back-dated invoice allowed and flagged; future date blocked; prior-financial-year back-dating blocked by default.
 - Payments: overpayment blocked for an invoice and for a customer receipt, refund cap, oldest-first allocation, repeated request with the same idempotency key.
 - Returns: quantity cap, remainder rule, stock restored at the cost snapshot, COGS reversal.
@@ -87,7 +87,7 @@ backend/
 2. Import into staging, review, then production.
 3. Count physical stock and compare with the app; post adjustments for differences.
 4. Run parallel billing for a few days if desired (paper plus app), then switch fully.
-5. Confirm the invoice number series starts correctly: `INV/26-27/0001`, or the next paper number entered as the series starting number (13.19) before the first invoice.
+5. Confirm the invoice number series starts correctly: serial 0001 (for example `INV/261105/0001`), or the next paper number entered as the series starting number (13.19) before the first invoice.
 6. Verify backups ran and a restore works.
 7. Train the owner (billing, returns, payouts, reports, backup export).
 

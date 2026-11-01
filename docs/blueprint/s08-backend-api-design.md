@@ -105,7 +105,7 @@ Response (saved values calculated by the backend; the print endpoint returns the
 
 ```json
 {
-  "id": 1288, "invoice_no": "INV/26-27/0042", "status": "ACTIVE",
+  "id": 1288, "invoice_no": "INV/261105/0042", "status": "ACTIVE",
   "subtotal": "...", "discount_amount": "...", "taxable_total": "...",
   "cgst_total": "...", "sgst_total": "...", "igst_total": "0.00",
   "round_off": "...", "grand_total": "...",

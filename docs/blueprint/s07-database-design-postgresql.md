@@ -32,7 +32,7 @@ gst_rates (approved list), number_series, app_settings, audit_log, import_jobs, 
 `id, username (unique), password_hash, last_login, is_active`
 
 **app_settings** (single row)
-`shop_name, logo_url, address, phone, email, gstin null, state null, state_code null, invoice_prefix, invoice_footer, terms_text, prices_include_gst (default true), default_manual_line_gst_rate null, purchase_gst_recoverable_default (default true, to be confirmed with accountant), commission_default_percent (default 10), commission_override_allowed (default true), allow_negative_stock (default false), allow_future_invoice_dates (default false), block_prior_fy_backdating (default true), financial_year_start_month (default 4), salary_basis (default 'CALENDAR_DAYS'), attendance_weights (json), overdue_days (default 30), discount_warn_percent, idle_logout_minutes, print_format (default 'A4'), theme`
+`shop_name, logo_url, address, phone, email, gstin null, state null, state_code null, invoice_prefix, series_start_number (integer, default 1, minimum 1; used only to continue paper invoice numbers), invoice_footer, terms_text, prices_include_gst (default true), default_manual_line_gst_rate null, purchase_gst_recoverable_default (default true, to be confirmed with accountant), commission_default_percent (default 10), commission_override_allowed (default true), allow_negative_stock (default false), allow_future_invoice_dates (default false), block_prior_fy_backdating (default true), financial_year_start_month (default 4), salary_basis (default 'CALENDAR_DAYS'), attendance_weights (json), overdue_days (default 30), discount_warn_percent, idle_logout_minutes, print_format (default 'A4'), theme`
 
 The old `commission_base` setting is removed: commission base is always the invoice `grand_total`.
 
@@ -96,7 +96,7 @@ Derived in queries/API: `billing_ready` (selling price, GST rate and HSN present
 | Column | Type | Notes |
 |---|---|---|
 | id | bigint PK | |
-| invoice_no | text unique | `INV/26-27/0001` |
+| invoice_no | text unique | `INV/261105/0042` (prefix / date YYMMDD / serial) |
 | idempotency_key | text unique | prevents duplicates |
 | invoice_date | date | indexed; future dates blocked by default |
 | is_backdated | boolean | invoice_date earlier than the creation date (audit-flagged) |

@@ -169,14 +169,17 @@ Example: final invoice amount (including GST, after discounts) 10,000 and rate 1
 - Payments to the company reduce dues (`company_payments`); a purchase has `payment_status` UNPAID, PARTIAL or PAID.
 
 ### 6.11 Invoice numbering
-- Format: `INV/26-27/0001` (prefix / financial year / sequence). Financial year starts in April (setting).
-- **Starting number:** the series starts at `INV/26-27/0001` unless existing paper invoices need to be continued; in that case the owner enters the next paper number as `series_start_number` for the current financial year before the first invoice (it cannot be lowered after an invoice exists).
+- **Format:** `PREFIX/YYMMDD/NNNN`: the prefix, the **document date** as year-month-day (two digits each), and a running serial. Example: invoice number 42 of the financial year, dated 5 November 2026, is `INV/261105/0042` (15 characters). The date in the number is the **invoice date** (the date printed on the invoice), not the time it was typed in.
+- **Serial:** one consecutive serial per series and financial year (April to March, setting). It is **not** restarted every day: GST rules ask for a consecutive serial number, unique for the financial year, in at most 16 characters made of letters, numbers, hyphen and slash, so a daily restart would not be appropriate. The date part makes each number easy to find by date; the serial keeps the sequence consecutive.
+- **Starting number:** the serial starts at 0001 in each financial year unless existing paper invoices need to be continued; in that case the owner enters the next paper number as `series_start_number` before the first invoice of the current financial year (it cannot be lowered after an invoice exists).
+- **Length check:** the service rejects any number longer than 16 characters (a serial above 99,999 in one year would be the first to reach the limit).
 - Generated **on the server inside the invoice transaction** using a counter row locked per series and financial year, so there are no gaps or duplicates even with parallel requests.
-- The financial year of an invoice is taken from the **invoice date**.
-- Separate series: `INV` (invoice), `CN` (sales return / credit note), `PUR` (purchase entry), `RCT` (payment receipt), `PR` (purchase return).
+- The financial year of a document is taken from its **document date**.
+- Separate series, all with the same pattern: `INV` (invoice), `CN` (sales return / credit note), `PUR` (purchase entry), `RCT` (payment receipt), `PR` (purchase return).
 - A cancelled number is **never reused**; the cancelled invoice stays visible.
-- The sequence restarts at 0001 at the start of each financial year.
-- Back-dated invoices receive the next number in sequence (numbers follow the order of issue, the date shown is the chosen date); the audit log flags them (6.18).
+- A back-dated invoice receives the **next serial** in the sequence but carries its **own date** in the number (for example `INV/261028/0043` entered on 5 November). Numbers are therefore consecutive in order of issue; the number order and the date order can differ for back-dated invoices. The audit log flags them (6.18).
+- Search: the invoice list and global search find an invoice by its full number, by the date part (for example `261105`) or by the serial.
+- *Open for your accountant (13.20):* confirm that a number containing the date meets your GST practice. It satisfies the stated limits (consecutive within the financial year, unique, 16 characters or fewer, allowed characters).
 
 ### 6.12 Audit log
 Recorded for: login/logout/failed login, create/update/deactivate of every master record, invoice create/cancel, **back-dated invoice creation (with the date entered and the actual time)**, payments, returns, stock adjustments, price and GST changes, commission payouts and reversals, settings changes (including approved GST rates), imports, exports, backups and restores.

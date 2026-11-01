@@ -61,12 +61,18 @@ The owner sells 3 litres of thinner from an opened drum as a manual line: quanti
 - Invoice payable 6,270.00 - 988.00 = 5,282.00; paid 5,000.00; balance due **282.00**
 
 ### 12.5 Receive payment across invoices; overpayment blocked
-Customer has INV/26-27/0010 balance 1,270 (older) and INV/26-27/0014 balance 500 (outstanding 1,770).
+Customer has INV/261012/0010 balance 1,270 (older) and INV/261020/0014 balance 500 (outstanding 1,770).
 - Customer pays 1,500: one receipt, two allocations: 0010 cleared (1,270) and 0014 receives 230 (balance 270).
 - If the customer tried to pay 2,000 against outstanding 1,770, the server rejects it with `PAYMENT_EXCEEDS_DUE` (maximum 1,770). Customer advances are a future enhancement.
 
 ### 12.6 Invoice numbering
-`INV/26-27/0001` ... `INV/26-27/0007` (cancelled, number kept, never reused) ... `INV/26-27/0008` next. From 1 April 2027: `INV/27-28/0001`. If the owner continues paper invoices and sets the starting number to 215, the first system invoice is `INV/26-27/0215`.
+- 5 November 2026, invoice number 42 of the year: `INV/261105/0042`. The next invoice the same day is `INV/261105/0043`; the first invoice the next day is `INV/261106/0044` (the serial keeps counting, it does not restart each day).
+- Back-dated: an invoice dated 28 October entered on 5 November takes the next serial: `INV/261028/0045`.
+- A cancelled invoice keeps its number (never reused): `INV/261105/0043` stays visible as cancelled and the next one is 0046.
+- New financial year: the first invoice of 2027-28, dated 1 April 2027, is `INV/270401/0001`.
+- If the owner continues paper invoices and sets the starting number to 215, the first system invoice dated 5 November 2026 is `INV/261105/0215`.
+- Credit note 3 of the year dated 6 November 2026: `CN/261106/0003`.
+- Length: `INV/261105/0042` has 15 characters; a five-digit serial would still fit (16).
 
 ### 12.7 Back-dated and future dates
 Entering 28 October 2026 on 5 November 2026 (same financial year) is accepted, flagged `is_backdated` and written to the audit log. Entering 6 November 2026 on 5 November is rejected (`FUTURE_DATE_NOT_ALLOWED`). Entering 20 March 2026 (previous financial year) is rejected by default (`PRIOR_FY_BACKDATE_BLOCKED`, assumption 13.15).

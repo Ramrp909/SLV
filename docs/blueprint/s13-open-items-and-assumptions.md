@@ -1,7 +1,7 @@
 ## 13. Open Items and Assumptions
 
 ### 13.A Confirmed for Version 1 (closed; see Section 2.1)
-Product-wise GST, GST-inclusive prices, commission on the final invoice total including GST, commission accrual at issue with proportional reversal, purchase GST costing (recoverable excluded, non-recoverable included), back-dating with audit and no future dates, calendar-day salary basis, overpayments blocked, A4 printing only, invoice numbering from `INV/26-27/0001` (or the continued paper number), optional category, manual non-stock lines.
+Product-wise GST, GST-inclusive prices, commission on the final invoice total including GST, commission accrual at issue with proportional reversal, purchase GST costing (recoverable excluded, non-recoverable included), back-dating with audit and no future dates, calendar-day salary basis, overpayments blocked, A4 printing only, invoice numbering with the invoice date inside the number, for example `INV/261105/0042` (starting serial 0001, or the continued paper number), optional category, manual non-stock lines.
 
 ### 13.B Open decisions (owner or accountant must supply or approve)
 
@@ -13,6 +13,7 @@ Product-wise GST, GST-inclusive prices, commission on the final invoice total in
 | 13.14 | **Purchase-return valuation rule** | **Open (accountant approval).** Provisional rule: value the return at the inventory cost of the purchase line returned (else the current average) and recalculate the average (6.3). Alternative: return at current average with the difference booked as a purchase variance |
 | 13.17 | Place-of-supply rules for the shop's customers | **Open (accountant to verify)** the defaults in 6.5 |
 | 13.19 | Existing paper invoice numbers: last used number in the current financial year | **Data needed at go-live** if paper numbers are to be continued (entered as the series starting number) |
+| 13.20 | Invoice number format with the date inside (`INV/261105/0042`) | **Open (accountant to confirm).** It meets the stated limits (consecutive serial within the financial year, unique, at most 16 characters, allowed characters); confirm it matches your GST practice |
 
 ### 13.C Assumptions (not owner-confirmed; configurable)
 

@@ -72,7 +72,7 @@ Login, dashboard, invoices (create, list, print), customers and dues, brokers an
 | 9 | Employee salary | Calendar days is the default basis; attendance, leave, bonus and deductions are configurable (6.14) |
 | 10 | Overpayments | Payments above the outstanding due are blocked in Version 1; a customer advance ledger is a future enhancement (6.8) |
 | 11 | Invoice printing | A4 in Version 1; 80 mm thermal printing deferred (9.4) |
-| 12 | Invoice numbering | Starts at `INV/26-27/0001` unless existing paper numbers must be continued (starting number is a setting); server-generated, gap-free, never reused after cancellation (6.11) |
+| 12 | Invoice numbering | **The invoice date is part of the number**, for example `INV/261105/0042` (prefix / date as YYMMDD / running serial). The serial runs consecutively through the financial year and starts at 0001 unless existing paper numbers are continued (starting number is a setting). Server-generated, gap-free, never reused after cancellation, at most 16 characters (6.11). *Updated by the owner on 1 November 2026; replaces the earlier `INV/26-27/0001` style.* |
 | 13 | Product category | Optional. Required product fields: company, product type, product code, pack size and unit (6.1) |
 | 14 | Manual invoice lines | Non-stock manual lines with an optional internal cost for profit reporting (15.6) |
 
@@ -472,14 +472,17 @@ Example: final invoice amount (including GST, after discounts) 10,000 and rate 1
 - Payments to the company reduce dues (`company_payments`); a purchase has `payment_status` UNPAID, PARTIAL or PAID.
 
 ### 6.11 Invoice numbering
-- Format: `INV/26-27/0001` (prefix / financial year / sequence). Financial year starts in April (setting).
-- **Starting number:** the series starts at `INV/26-27/0001` unless existing paper invoices need to be continued; in that case the owner enters the next paper number as `series_start_number` for the current financial year before the first invoice (it cannot be lowered after an invoice exists).
+- **Format:** `PREFIX/YYMMDD/NNNN`: the prefix, the **document date** as year-month-day (two digits each), and a running serial. Example: invoice number 42 of the financial year, dated 5 November 2026, is `INV/261105/0042` (15 characters). The date in the number is the **invoice date** (the date printed on the invoice), not the time it was typed in.
+- **Serial:** one consecutive serial per series and financial year (April to March, setting). It is **not** restarted every day: GST rules ask for a consecutive serial number, unique for the financial year, in at most 16 characters made of letters, numbers, hyphen and slash, so a daily restart would not be appropriate. The date part makes each number easy to find by date; the serial keeps the sequence consecutive.
+- **Starting number:** the serial starts at 0001 in each financial year unless existing paper invoices need to be continued; in that case the owner enters the next paper number as `series_start_number` before the first invoice of the current financial year (it cannot be lowered after an invoice exists).
+- **Length check:** the service rejects any number longer than 16 characters (a serial above 99,999 in one year would be the first to reach the limit).
 - Generated **on the server inside the invoice transaction** using a counter row locked per series and financial year, so there are no gaps or duplicates even with parallel requests.
-- The financial year of an invoice is taken from the **invoice date**.
-- Separate series: `INV` (invoice), `CN` (sales return / credit note), `PUR` (purchase entry), `RCT` (payment receipt), `PR` (purchase return).
+- The financial year of a document is taken from its **document date**.
+- Separate series, all with the same pattern: `INV` (invoice), `CN` (sales return / credit note), `PUR` (purchase entry), `RCT` (payment receipt), `PR` (purchase return).
 - A cancelled number is **never reused**; the cancelled invoice stays visible.
-- The sequence restarts at 0001 at the start of each financial year.
-- Back-dated invoices receive the next number in sequence (numbers follow the order of issue, the date shown is the chosen date); the audit log flags them (6.18).
+- A back-dated invoice receives the **next serial** in the sequence but carries its **own date** in the number (for example `INV/261028/0043` entered on 5 November). Numbers are therefore consecutive in order of issue; the number order and the date order can differ for back-dated invoices. The audit log flags them (6.18).
+- Search: the invoice list and global search find an invoice by its full number, by the date part (for example `261105`) or by the serial.
+- *Open for your accountant (13.20):* confirm that a number containing the date meets your GST practice. It satisfies the stated limits (consecutive within the financial year, unique, 16 characters or fewer, allowed characters).
 
 ### 6.12 Audit log
 Recorded for: login/logout/failed login, create/update/deactivate of every master record, invoice create/cancel, **back-dated invoice creation (with the date entered and the actual time)**, payments, returns, stock adjustments, price and GST changes, commission payouts and reversals, settings changes (including approved GST rates), imports, exports, backups and restores.
@@ -587,7 +590,7 @@ gst_rates (approved list), number_series, app_settings, audit_log, import_jobs, 
 `id, username (unique), password_hash, last_login, is_active`
 
 **app_settings** (single row)
-`shop_name, logo_url, address, phone, email, gstin null, state null, state_code null, invoice_prefix, invoice_footer, terms_text, prices_include_gst (default true), default_manual_line_gst_rate null, purchase_gst_recoverable_default (default true, to be confirmed with accountant), commission_default_percent (default 10), commission_override_allowed (default true), allow_negative_stock (default false), allow_future_invoice_dates (default false), block_prior_fy_backdating (default true), financial_year_start_month (default 4), salary_basis (default 'CALENDAR_DAYS'), attendance_weights (json), overdue_days (default 30), discount_warn_percent, idle_logout_minutes, print_format (default 'A4'), theme`
+`shop_name, logo_url, address, phone, email, gstin null, state null, state_code null, invoice_prefix, series_start_number (integer, default 1, minimum 1; used only to continue paper invoice numbers), invoice_footer, terms_text, prices_include_gst (default true), default_manual_line_gst_rate null, purchase_gst_recoverable_default (default true, to be confirmed with accountant), commission_default_percent (default 10), commission_override_allowed (default true), allow_negative_stock (default false), allow_future_invoice_dates (default false), block_prior_fy_backdating (default true), financial_year_start_month (default 4), salary_basis (default 'CALENDAR_DAYS'), attendance_weights (json), overdue_days (default 30), discount_warn_percent, idle_logout_minutes, print_format (default 'A4'), theme`
 
 The old `commission_base` setting is removed: commission base is always the invoice `grand_total`.
 
@@ -651,7 +654,7 @@ Derived in queries/API: `billing_ready` (selling price, GST rate and HSN present
 | Column | Type | Notes |
 |---|---|---|
 | id | bigint PK | |
-| invoice_no | text unique | `INV/26-27/0001` |
+| invoice_no | text unique | `INV/261105/0042` (prefix / date YYMMDD / serial) |
 | idempotency_key | text unique | prevents duplicates |
 | invoice_date | date | indexed; future dates blocked by default |
 | is_backdated | boolean | invoice_date earlier than the creation date (audit-flagged) |
@@ -853,7 +856,7 @@ Response (saved values calculated by the backend; the print endpoint returns the
 
 ```json
 {
-  "id": 1288, "invoice_no": "INV/26-27/0042", "status": "ACTIVE",
+  "id": 1288, "invoice_no": "INV/261105/0042", "status": "ACTIVE",
   "subtotal": "...", "discount_amount": "...", "taxable_total": "...",
   "cgst_total": "...", "sgst_total": "...", "igst_total": "0.00",
   "round_off": "...", "grand_total": "...",
@@ -1254,7 +1257,7 @@ Estimates assume one full-stack developer (about 19 weeks in the first version, 
 - GST snapshots: change a product's GST rate and HSN after issue; the invoice, credit notes and reports must not change.
 - Commission: 10,000 x 10% = 1,000 on the saved grand total; invoice-specific override; snapshot unchanged when the broker default changes; proportional reversal on partial returns with the remainder rule; full reversal on cancellation; negative broker balance after reversal; commission counted once as an expense (payouts and reversals never double-counted).
 - Profit: gross profit excludes GST; profit after commission; net profit after expenses; manual line without cost marked **profit incomplete** (never zero); manual line with cost; returns reduce revenue, COGS and commission.
-- Numbering: sequence, financial year from invoice date, configurable starting number, cancelled numbers never reused, concurrent requests.
+- Numbering: format `PREFIX/YYMMDD/NNNN` uses the invoice date, serial continues across days within a financial year (no daily restart), financial year from invoice date, configurable starting number, back-dated invoice gets the next serial with its own date, length never above 16, cancelled numbers never reused, concurrent requests.
 - Dates: back-dated invoice allowed and flagged; future date blocked; prior-financial-year back-dating blocked by default.
 - Payments: overpayment blocked for an invoice and for a customer receipt, refund cap, oldest-first allocation, repeated request with the same idempotency key.
 - Returns: quantity cap, remainder rule, stock restored at the cost snapshot, COGS reversal.
@@ -1310,7 +1313,7 @@ backend/
 2. Import into staging, review, then production.
 3. Count physical stock and compare with the app; post adjustments for differences.
 4. Run parallel billing for a few days if desired (paper plus app), then switch fully.
-5. Confirm the invoice number series starts correctly: `INV/26-27/0001`, or the next paper number entered as the series starting number (13.19) before the first invoice.
+5. Confirm the invoice number series starts correctly: serial 0001 (for example `INV/261105/0001`), or the next paper number entered as the series starting number (13.19) before the first invoice.
 6. Verify backups ran and a restore works.
 7. Train the owner (billing, returns, payouts, reports, backup export).
 
@@ -1384,12 +1387,18 @@ The owner sells 3 litres of thinner from an opened drum as a manual line: quanti
 - Invoice payable 6,270.00 - 988.00 = 5,282.00; paid 5,000.00; balance due **282.00**
 
 ### 12.5 Receive payment across invoices; overpayment blocked
-Customer has INV/26-27/0010 balance 1,270 (older) and INV/26-27/0014 balance 500 (outstanding 1,770).
+Customer has INV/261012/0010 balance 1,270 (older) and INV/261020/0014 balance 500 (outstanding 1,770).
 - Customer pays 1,500: one receipt, two allocations: 0010 cleared (1,270) and 0014 receives 230 (balance 270).
 - If the customer tried to pay 2,000 against outstanding 1,770, the server rejects it with `PAYMENT_EXCEEDS_DUE` (maximum 1,770). Customer advances are a future enhancement.
 
 ### 12.6 Invoice numbering
-`INV/26-27/0001` ... `INV/26-27/0007` (cancelled, number kept, never reused) ... `INV/26-27/0008` next. From 1 April 2027: `INV/27-28/0001`. If the owner continues paper invoices and sets the starting number to 215, the first system invoice is `INV/26-27/0215`.
+- 5 November 2026, invoice number 42 of the year: `INV/261105/0042`. The next invoice the same day is `INV/261105/0043`; the first invoice the next day is `INV/261106/0044` (the serial keeps counting, it does not restart each day).
+- Back-dated: an invoice dated 28 October entered on 5 November takes the next serial: `INV/261028/0045`.
+- A cancelled invoice keeps its number (never reused): `INV/261105/0043` stays visible as cancelled and the next one is 0046.
+- New financial year: the first invoice of 2027-28, dated 1 April 2027, is `INV/270401/0001`.
+- If the owner continues paper invoices and sets the starting number to 215, the first system invoice dated 5 November 2026 is `INV/261105/0215`.
+- Credit note 3 of the year dated 6 November 2026: `CN/261106/0003`.
+- Length: `INV/261105/0042` has 15 characters; a five-digit serial would still fit (16).
 
 ### 12.7 Back-dated and future dates
 Entering 28 October 2026 on 5 November 2026 (same financial year) is accepted, flagged `is_backdated` and written to the audit log. Entering 6 November 2026 on 5 November is rejected (`FUTURE_DATE_NOT_ALLOWED`). Entering 20 March 2026 (previous financial year) is rejected by default (`PRIOR_FY_BACKDATE_BLOCKED`, assumption 13.15).
@@ -1405,7 +1414,7 @@ Base salary 20,000; a 30-day month; attendance: Present 24, Holiday 2, Half-day 
 ## 13. Open Items and Assumptions
 
 ### 13.A Confirmed for Version 1 (closed; see Section 2.1)
-Product-wise GST, GST-inclusive prices, commission on the final invoice total including GST, commission accrual at issue with proportional reversal, purchase GST costing (recoverable excluded, non-recoverable included), back-dating with audit and no future dates, calendar-day salary basis, overpayments blocked, A4 printing only, invoice numbering from `INV/26-27/0001` (or the continued paper number), optional category, manual non-stock lines.
+Product-wise GST, GST-inclusive prices, commission on the final invoice total including GST, commission accrual at issue with proportional reversal, purchase GST costing (recoverable excluded, non-recoverable included), back-dating with audit and no future dates, calendar-day salary basis, overpayments blocked, A4 printing only, invoice numbering with the invoice date inside the number, for example `INV/261105/0042` (starting serial 0001, or the continued paper number), optional category, manual non-stock lines.
 
 ### 13.B Open decisions (owner or accountant must supply or approve)
 
@@ -1417,6 +1426,7 @@ Product-wise GST, GST-inclusive prices, commission on the final invoice total in
 | 13.14 | **Purchase-return valuation rule** | **Open (accountant approval).** Provisional rule: value the return at the inventory cost of the purchase line returned (else the current average) and recalculate the average (6.3). Alternative: return at current average with the difference booked as a purchase variance |
 | 13.17 | Place-of-supply rules for the shop's customers | **Open (accountant to verify)** the defaults in 6.5 |
 | 13.19 | Existing paper invoice numbers: last used number in the current financial year | **Data needed at go-live** if paper numbers are to be continued (entered as the series starting number) |
+| 13.20 | Invoice number format with the date inside (`INV/261105/0042`) | **Open (accountant to confirm).** It meets the stated limits (consecutive serial within the financial year, unique, at most 16 characters, allowed characters); confirm it matches your GST practice |
 
 ### 13.C Assumptions (not owner-confirmed; configurable)
 

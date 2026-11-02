@@ -2,7 +2,6 @@
 
 from datetime import date
 from decimal import Decimal
-from subprocess import run
 from threading import Thread
 
 from django.contrib.auth import get_user_model
@@ -477,14 +476,22 @@ class TestSpectacularSchema(TestCase):
     """Tests for drf-spectacular schema generation."""
 
     def test_spectacular_validate_passes(self):
-        """Test that python manage.py spectacular --validate --fail-on-warn succeeds."""
-        result = run(
-            ["python", "manage.py", "spectacular", "--validate", "--fail-on-warn"],
-            cwd="E:/ram/Inventory Management/project-starter-kit/backend",
-            capture_output=True,
-            text=True,
-        )
-        self.assertEqual(result.returncode, 0, f"Spectacular validation failed: {result.stderr}")
+        """Test that spectacular --validate --fail-on-warn succeeds."""
+        import io
+
+        from django.core.management import call_command
+        from django.core.management.base import CommandError
+
+        stdout = io.StringIO()
+        stderr = io.StringIO()
+        try:
+            call_command(
+                "spectacular", "--validate", "--fail-on-warn", stdout=stdout, stderr=stderr
+            )
+        except (CommandError, SystemExit):
+            # drf-spectacular may raise CommandError or call sys.exit() on validation failure
+            output = stderr.getvalue() or stdout.getvalue()
+            self.fail(f"Spectacular validation failed: {output}")
 
     def test_schema_has_bearer_security_scheme(self):
         """Test that the schema has a Bearer JWT security scheme."""

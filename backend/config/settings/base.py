@@ -223,12 +223,27 @@ CSRF_TRUSTED_ORIGINS = env("CORS_ALLOWED_ORIGINS")
 
 # drf-spectacular Settings
 SPECTACULAR_SETTINGS = {
-    "TITLE": "Paint Shop Management API",
+    "TITLE": "Paint Shop API",
     "DESCRIPTION": "API for single-owner paint and hardware shop management",
-    "VERSION": "1.0.0",
+    "VERSION": "1.0",
     "SERVE_INCLUDE_SCHEMA": False,
     "COMPONENT_SPLIT_REQUEST": True,
     "SCHEMA_PATH_PREFIX": "/api/v1",
+    "SECURITY": [{"Bearer": []}],
+    "SECURITY_SCHEMES": {
+        "Bearer": {
+            "type": "http",
+            "scheme": "bearer",
+            "bearerFormat": "JWT",
+        },
+    },
+    "TAGS": [
+        {"name": "system", "description": "System endpoints (health check)"},
+        {"name": "auth", "description": "Authentication endpoints"},
+        {"name": "settings", "description": "Settings and GST rates"},
+    ],
+    # Disable auto-discovery of JWT auth scheme to use our custom "Bearer" scheme
+    "JWT_AUTH": False,
 }
 
 # Login URL for browsable API

@@ -1,13 +1,25 @@
 """Views for accounts authentication."""
 
 from django.core.exceptions import ValidationError
+from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from rest_framework import status
+from rest_framework.generics import GenericAPIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.throttling import AnonRateThrottle
 from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import TokenError
 
+from apps.accounts.serializers import (
+    ChangePasswordRequestSerializer,
+    ChangePasswordResponseSerializer,
+    LoginRequestSerializer,
+    LoginResponseSerializer,
+    LogoutResponseSerializer,
+    MeResponseSerializer,
+    RefreshRequestSerializer,
+    RefreshResponseSerializer,
+)
 from apps.accounts.services import AuthenticationService, TokenCookieService
 
 
@@ -18,12 +30,36 @@ class LoginRateThrottle(AnonRateThrottle):
     rate = "100/minute"
 
 
-class LoginView(APIView):
+class LoginView(GenericAPIView):
     """POST /api/v1/auth/login/ - Owner login."""
 
     permission_classes = [AllowAny]
     throttle_classes = [LoginRateThrottle]
+    serializer_class = LoginRequestSerializer
 
+    @extend_schema(
+        tags=["auth"],
+        summary="Owner login",
+        description="Authenticate owner with username and password. Returns access token in body and sets refresh token as httpOnly cookie.",
+        request={
+            "application/json": {
+                "type": "object",
+                "properties": {
+                    "username": {"type": "string"},
+                    "password": {"type": "string", "format": "password"},
+                },
+                "required": ["username", "password"],
+            }
+        },
+        responses={
+            200: LoginResponseSerializer,
+            400: OpenApiResponse(description="Validation error"),
+            401: OpenApiResponse(
+                description="Authentication failed - generic error for wrong password, lockout, or nonexistent user"
+            ),
+        },
+        auth=[],
+    )
     def post(self, request):
         username = request.data.get("username", "").strip()
         password = request.data.get("password", "")
@@ -69,10 +105,34 @@ class LoginView(APIView):
         return response
 
 
+@extend_schema(
+    tags=["auth"],
+    summary="Refresh access token",
+    description="Rotate refresh token. Requires refresh_token cookie and X-Requested-With: XMLHttpRequest header. Returns new access token and rotates refresh cookie.",
+    request=RefreshRequestSerializer,
+    responses={
+        200: RefreshResponseSerializer,
+        400: OpenApiResponse(description="Refresh token in body not allowed"),
+        401: OpenApiResponse(description="Invalid or expired refresh token"),
+        403: OpenApiResponse(description="Missing X-Requested-With header"),
+    },
+    auth=[],
+    parameters=[
+        OpenApiParameter(
+            name="X-Requested-With",
+            location=OpenApiParameter.HEADER,
+            required=True,
+            type=str,
+            enum=["XMLHttpRequest"],
+            description="CSRF protection header",
+        ),
+    ],
+)
 class RefreshView(APIView):
     """POST /api/v1/auth/refresh/ - Rotate refresh token."""
 
     permission_classes = [AllowAny]
+    serializer_class = RefreshRequestSerializer
 
     def post(self, request):
         # CSRF protection: require X-Requested-With header
@@ -137,10 +197,21 @@ class RefreshView(APIView):
         return response
 
 
+@extend_schema(
+    tags=["auth"],
+    summary="Logout",
+    description="Blacklist refresh token and clear cookie.",
+    request=None,
+    responses={
+        200: LogoutResponseSerializer,
+    },
+    auth=[],
+)
 class LogoutView(APIView):
     """POST /api/v1/auth/logout/ - Logout and blacklist refresh token."""
 
     permission_classes = [AllowAny]
+    serializer_class = LogoutResponseSerializer
 
     def post(self, request):
         refresh_token = TokenCookieService.get_refresh_token_from_request(request)
@@ -161,10 +232,22 @@ class LogoutView(APIView):
         return response
 
 
+@extend_schema(
+    tags=["auth"],
+    summary="Change password",
+    description="Change owner password. Requires old password, invalidates all refresh tokens.",
+    request=ChangePasswordRequestSerializer,
+    responses={
+        200: ChangePasswordResponseSerializer,
+        400: OpenApiResponse(description="Validation error or incorrect old password"),
+        401: OpenApiResponse(description="Unauthenticated"),
+    },
+)
 class ChangePasswordView(APIView):
     """POST /api/v1/auth/change-password/ - Change owner password."""
 
     permission_classes = [IsAuthenticated]
+    serializer_class = ChangePasswordRequestSerializer
 
     def post(self, request):
         old_password = request.data.get("old_password", "")
@@ -208,10 +291,20 @@ class ChangePasswordView(APIView):
         return response
 
 
+@extend_schema(
+    tags=["auth"],
+    summary="Get current user",
+    description="Returns the username of the authenticated owner.",
+    responses={
+        200: MeResponseSerializer,
+        401: OpenApiResponse(description="Unauthenticated"),
+    },
+)
 class MeView(APIView):
     """GET /api/v1/auth/me/ - Get current user profile."""
 
     permission_classes = [IsAuthenticated]
+    serializer_class = MeResponseSerializer
 
     def get(self, request):
         return Response(

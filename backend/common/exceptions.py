@@ -11,6 +11,7 @@ Returns consistent error format:
 from rest_framework import status
 from rest_framework.exceptions import (
     AuthenticationFailed,
+    NotAuthenticated,
     NotFound,
     PermissionDenied,
     Throttled,
@@ -67,7 +68,7 @@ def _get_error_code(exc) -> str:
         return "VALIDATION_ERROR"
     elif isinstance(exc, NotFound):
         return "NOT_FOUND"
-    elif isinstance(exc, AuthenticationFailed):
+    elif isinstance(exc, AuthenticationFailed | NotAuthenticated):
         return "AUTHENTICATION_FAILED"
     elif isinstance(exc, PermissionDenied):
         return "PERMISSION_DENIED"
@@ -82,7 +83,7 @@ def _get_error_message(exc, response) -> str:
         return "Validation failed"
     elif isinstance(exc, NotFound):
         return str(exc.detail) if hasattr(exc, "detail") else "Resource not found"
-    elif isinstance(exc, AuthenticationFailed):
+    elif isinstance(exc, AuthenticationFailed | NotAuthenticated):
         return str(exc.detail) if hasattr(exc, "detail") else "Authentication failed"
     elif isinstance(exc, PermissionDenied):
         return str(exc.detail) if hasattr(exc, "detail") else "Permission denied"

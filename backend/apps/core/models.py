@@ -1,5 +1,6 @@
-"""Models for core app: AppSettings and GstRate."""
+"""Models for core app: AppSettings, GstRate, and NumberSeries."""
 
+from datetime import date
 from decimal import Decimal
 
 from django.core.exceptions import ValidationError
@@ -188,3 +189,74 @@ class GstRate(models.Model):
     def save(self, *args, **kwargs):
         self.full_clean()
         super().save(*args, **kwargs)
+
+
+class NumberSeries(models.Model):
+    """
+    Number series for documents (invoices, credit notes, purchases, receipts, purchase returns).
+
+    Each series has a counter per financial year. The serial never restarts daily -
+    it continues consecutively within the financial year.
+
+    Format: PREFIX/YYMMDD/NNNN (e.g., INV/261105/0042)
+    - Prefix: from settings for INV, fixed for others (CN, PUR, RCT, PR)
+    - Date part: document date (not current date), formatted YYMMDD
+    - Serial: padded to 4 digits, consecutive per series + financial year
+    """
+
+    SERIES_CODES = {
+        "INV": "INV",  # Invoice - prefix from settings
+        "CN": "CN",  # Credit Note
+        "PUR": "PUR",  # Purchase
+        "RCT": "RCT",  # Receipt
+        "PR": "PR",  # Purchase Return
+    }
+
+    series_code = models.CharField(max_length=4, choices=[(k, k) for k in SERIES_CODES.keys()])
+    financial_year = models.CharField(max_length=7)  # Format: "26-27"
+    prefix = models.CharField(max_length=10)
+    last_number = models.PositiveIntegerField(default=0)
+    padding = models.PositiveSmallIntegerField(default=4)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = [["series_code", "financial_year"]]
+        ordering = ["series_code", "financial_year"]
+        verbose_name = "Number Series"
+        verbose_name_plural = "Number Series"
+
+    def __str__(self):
+        return f"{self.series_code}/{self.financial_year} (last: {self.last_number})"
+
+
+def get_financial_year(document_date: date, start_month: int = 4) -> str:
+    """
+    Calculate financial year from document date.
+
+    Financial year starts in April (month 4 by default).
+    Returns string like "26-27" for 2026-04-01 to 2027-03-31.
+    """
+    year = document_date.year
+    month = document_date.month
+
+    if month >= start_month:
+        # Current financial year starts this year
+        fy_start = year
+        fy_end = year + 1
+    else:
+        # Current financial year started last year
+        fy_start = year - 1
+        fy_end = year
+
+    return f"{fy_start % 100:02d}-{fy_end % 100:02d}"
+
+
+def series_start_locked() -> bool:
+    """
+    Check if the INV series start number is locked.
+
+    Once any INV number has been issued, the series_start_number
+    in settings can no longer be changed.
+    """
+    return NumberSeries.objects.filter(series_code="INV").exists()

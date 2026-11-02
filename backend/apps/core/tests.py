@@ -1,16 +1,19 @@
-"""Tests for core app: AppSettings, GstRate, validators, and API endpoints."""
+"""Tests for core app: AppSettings, GstRate, validators, NumberSeries, and API endpoints."""
 
+from datetime import date
 from decimal import Decimal
 from subprocess import run
+from threading import Thread
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
-from django.db import IntegrityError
-from django.test import TestCase
+from django.db import IntegrityError, connection, transaction
+from django.test import TestCase, TransactionTestCase
 from rest_framework import status
 from rest_framework.test import APIClient
 
-from apps.core.models import AppSettings, GstRate
+from apps.core.models import AppSettings, GstRate, NumberSeries
+from apps.core.services import next_number, series_start_locked
 from apps.core.validators import validate_gst_rate
 
 User = get_user_model()
@@ -483,3 +486,368 @@ class TestSpectacularSchema(TestCase):
         _ = post_op.get("security", [])
         # For public endpoints, security should be empty or not present
         # This is just checking the structure exists
+
+
+class TestNumberSeriesModel(TestCase):
+    """Tests for NumberSeries model."""
+
+    def test_create_number_series(self):
+        """Test creating a NumberSeries row."""
+        series = NumberSeries.objects.create(
+            series_code="INV",
+            financial_year="26-27",
+            prefix="INV",
+            last_number=0,
+            padding=4,
+        )
+        self.assertEqual(series.series_code, "INV")
+        self.assertEqual(series.financial_year, "26-27")
+        self.assertEqual(series.last_number, 0)
+
+    def test_unique_constraint_series_code_financial_year(self):
+        """Test unique constraint on series_code + financial_year."""
+        NumberSeries.objects.create(
+            series_code="INV", financial_year="26-27", prefix="INV", last_number=0, padding=4
+        )
+        with self.assertRaises(IntegrityError):
+            NumberSeries.objects.create(
+                series_code="INV", financial_year="26-27", prefix="INV", last_number=0, padding=4
+            )
+
+    def test_different_financial_year_allowed(self):
+        """Test same series_code with different financial_year is allowed."""
+        NumberSeries.objects.create(
+            series_code="INV", financial_year="26-27", prefix="INV", last_number=0, padding=4
+        )
+        series2 = NumberSeries.objects.create(
+            series_code="INV", financial_year="27-28", prefix="INV", last_number=0, padding=4
+        )
+        self.assertEqual(series2.financial_year, "27-28")
+
+
+class TestNextNumberService(TestCase):
+    """Tests for next_number service function."""
+
+    def setUp(self):
+        # Ensure clean state
+        NumberSeries.objects.all().delete()
+        # Reset settings
+        settings = AppSettings.get_settings()
+        settings.invoice_prefix = "INV"
+        settings.series_start_number = 1
+        settings.financial_year_start_month = 4
+        settings.save()
+
+    def test_next_number_exact_format(self):
+        """Test exact format INV/261105/0042."""
+        # Create series with last_number = 41 so next is 42
+        NumberSeries.objects.create(
+            series_code="INV",
+            financial_year="26-27",
+            prefix="INV",
+            last_number=41,
+            padding=4,
+        )
+        result = next_number("INV", date(2026, 11, 5))
+        self.assertEqual(result, "INV/261105/0042")
+
+    def test_next_number_serial_continues_across_days(self):
+        """Test serial continues across days (0042 then 0043 on 6 November)."""
+        NumberSeries.objects.create(
+            series_code="INV",
+            financial_year="26-27",
+            prefix="INV",
+            last_number=41,
+            padding=4,
+        )
+        result1 = next_number("INV", date(2026, 11, 5))
+        result2 = next_number("INV", date(2026, 11, 6))
+        self.assertEqual(result1, "INV/261105/0042")
+        self.assertEqual(result2, "INV/261106/0043")
+
+    def test_next_number_financial_year_rollover(self):
+        """Test financial year rollover - 1 April 2027 gives INV/270401/0001."""
+        # Create series for 26-27
+        NumberSeries.objects.create(
+            series_code="INV",
+            financial_year="26-27",
+            prefix="INV",
+            last_number=9999,
+            padding=4,
+        )
+        # Document dated 1 April 2027 belongs to 27-28
+        result = next_number("INV", date(2027, 4, 1))
+        self.assertEqual(result, "INV/270401/0001")
+        # 26-27 series should be untouched
+        series_26_27 = NumberSeries.objects.get(series_code="INV", financial_year="26-27")
+        self.assertEqual(series_26_27.last_number, 9999)
+
+    def test_next_number_backdated_document(self):
+        """Test back-dated document gets next serial with its own date."""
+        NumberSeries.objects.create(
+            series_code="INV",
+            financial_year="26-27",
+            prefix="INV",
+            last_number=44,
+            padding=4,
+        )
+        # Document dated 28 October (backdated) after serial 44 gets 0045 with date 261028
+        result = next_number("INV", date(2026, 10, 28))
+        self.assertEqual(result, "INV/261028/0045")
+
+    def test_series_start_number_custom(self):
+        """Test series_start_number 215 gives INV/261105/0215 for first ever invoice."""
+        settings = AppSettings.get_settings()
+        settings.series_start_number = 215
+        settings.save()
+
+        # No existing INV series for 26-27, so first number should be 215
+        result = next_number("INV", date(2026, 11, 5))
+        self.assertEqual(result, "INV/261105/0215")
+        # Next should be 216
+        result2 = next_number("INV", date(2026, 11, 5))
+        self.assertEqual(result2, "INV/261105/0216")
+
+    def test_start_number_ignored_for_cn(self):
+        """Test start number is ignored for CN and other non-INV series."""
+        settings = AppSettings.get_settings()
+        settings.series_start_number = 500
+        settings.save()
+
+        # CN should always start at 1
+        result = next_number("CN", date(2026, 11, 5))
+        self.assertEqual(result, "CN/261105/0001")
+
+    def test_start_number_ignored_for_next_financial_year(self):
+        """Test start number is ignored for next financial year."""
+        settings = AppSettings.get_settings()
+        settings.series_start_number = 500
+        settings.save()
+
+        # Create 26-27 series with some numbers
+        NumberSeries.objects.create(
+            series_code="INV",
+            financial_year="26-27",
+            prefix="INV",
+            last_number=100,
+            padding=4,
+        )
+        # First number in 27-28 should be 0001, not 500
+        result = next_number("INV", date(2027, 4, 1))
+        self.assertEqual(result, "INV/270401/0001")
+
+    def test_16_character_guard(self):
+        """Test 16-character guard rejects numbers that are too long."""
+        NumberSeries.objects.create(
+            series_code="INV",
+            financial_year="26-27",
+            prefix="INV",
+            last_number=99999,  # This would make a 17-char number
+            padding=5,
+        )
+        with self.assertRaises(ValidationError):
+            next_number("INV", date(2026, 11, 5))
+
+    def test_unknown_series_code_rejected(self):
+        """Test unknown series code raises error."""
+        with self.assertRaises(ValidationError):
+            next_number("XXX", date(2026, 11, 5))
+
+    def test_calling_outside_transaction_raises(self):
+        """Test calling next_number outside a transaction raises error (placeholder)."""
+        # This test is replaced by TestNextNumberOutsideTransaction in TransactionTestCase
+        pass
+
+    def test_series_start_locked(self):
+        """Test series_start_locked returns True after first INV number issued."""
+        self.assertFalse(series_start_locked())
+        with transaction.atomic():
+            next_number("INV", date(2026, 11, 5))
+        self.assertTrue(series_start_locked())
+
+    def test_settings_api_rejects_series_start_number_change_when_locked(self):
+        """Test settings API rejects changing series_start_number after INV number issued."""
+        client = APIClient()
+        User.objects.create_user(username="owner", password="SecurePass123!")
+        response = client.post(
+            "/api/v1/auth/login/",
+            {"username": "owner", "password": "SecurePass123!"},
+            format="json",
+        )
+        access_token = response.json()["access"]
+        client.credentials(HTTP_AUTHORIZATION=f"Bearer {access_token}")
+
+        # First, issue an INV number
+        with transaction.atomic():
+            next_number("INV", date(2026, 11, 5))
+
+        # Now try to change series_start_number - should be rejected
+        response = client.put(
+            "/api/v1/settings/",
+            {"series_start_number": 999},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.json()["code"], "VALIDATION_ERROR")
+
+
+class TestNextNumberOutsideTransaction(TransactionTestCase):
+    """Tests for next_number behavior when called outside transaction.atomic()."""
+
+    def setUp(self):
+        NumberSeries.objects.all().delete()
+        settings = AppSettings.get_settings()
+        settings.invoice_prefix = "INV"
+        settings.series_start_number = 1
+        settings.financial_year_start_month = 4
+        settings.save()
+
+    def test_calling_outside_transaction_raises_runtime_error(self):
+        """Test calling next_number outside transaction.atomic raises RuntimeError and creates no row."""
+        # Verify we're not in an atomic block
+        from django.db import transaction
+
+        conn = transaction.get_connection()
+        self.assertFalse(conn.in_atomic_block)
+
+        # Calling next_number should raise RuntimeError
+        with self.assertRaises(RuntimeError) as cm:
+            next_number("INV", date(2026, 11, 5))
+
+        self.assertIn("transaction.atomic", str(cm.exception))
+
+        # Verify no NumberSeries row was created
+        self.assertEqual(NumberSeries.objects.count(), 0)
+
+    def test_calling_inside_transaction_works(self):
+        """Test calling next_number inside transaction.atomic works normally."""
+        with transaction.atomic():
+            result = next_number("INV", date(2026, 11, 5))
+
+        self.assertEqual(result, "INV/261105/0001")
+        self.assertEqual(NumberSeries.objects.count(), 1)
+
+
+class TestNextNumberConcurrency(TransactionTestCase):
+    """Concurrency tests for next_number."""
+
+    def setUp(self):
+        NumberSeries.objects.all().delete()
+        settings = AppSettings.get_settings()
+        settings.invoice_prefix = "INV"
+        settings.series_start_number = 1
+        settings.financial_year_start_month = 4
+        settings.save()
+
+    def test_concurrency_20_threads_unique_contiguous(self):
+        """Test 20 threads produce 20 unique, contiguous serials."""
+        results = []
+        errors = []
+
+        def worker():
+            try:
+                # Each thread needs its own database connection
+                connection.close_if_unusable_or_obsolete()
+                with transaction.atomic():
+                    result = next_number("INV", date(2026, 11, 5))
+                    results.append(result)
+            except Exception as e:
+                errors.append(e)
+            finally:
+                # Ensure connection is closed after each thread
+                connection.close()
+
+        threads = [Thread(target=worker) for _ in range(20)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+
+        self.assertEqual(len(errors), 0, f"Errors occurred: {errors}")
+        self.assertEqual(len(results), 20)
+
+        # Extract serial numbers and verify they are contiguous
+        serials = sorted([int(r.split("/")[-1]) for r in results])
+        self.assertEqual(serials, list(range(1, 21)))
+
+        # Verify format is correct for all results
+        for r in results:
+            self.assertTrue(r.startswith("INV/261105/"))
+
+
+class TestNextNumberFinancialYearBoundary(TransactionTestCase):
+    """Tests for financial year boundary behavior (31 March vs 1 April)."""
+
+    def setUp(self):
+        NumberSeries.objects.all().delete()
+        settings = AppSettings.get_settings()
+        settings.invoice_prefix = "INV"
+        settings.series_start_number = 1
+        settings.financial_year_start_month = 4  # April start
+        settings.save()
+
+    def test_31_march_belongs_to_previous_fy(self):
+        """Test document dated 31 March 2027 belongs to FY 26-27."""
+        with transaction.atomic():
+            result = next_number("INV", date(2027, 3, 31))
+
+        self.assertEqual(result, "INV/270331/0001")
+        series = NumberSeries.objects.get(series_code="INV", financial_year="26-27")
+        self.assertEqual(series.last_number, 1)
+        # 27-28 series should not exist yet
+        self.assertFalse(NumberSeries.objects.filter(financial_year="27-28").exists())
+
+    def test_1_april_belongs_to_next_fy(self):
+        """Test document dated 1 April 2027 belongs to FY 27-28 (serial restarts at 0001)."""
+        # First create a 26-27 series with some numbers
+        NumberSeries.objects.create(
+            series_code="INV", financial_year="26-27", prefix="INV", last_number=100, padding=4
+        )
+
+        with transaction.atomic():
+            result = next_number("INV", date(2027, 4, 1))
+
+        self.assertEqual(result, "INV/270401/0001")
+        # 26-27 series should be untouched
+        series_26_27 = NumberSeries.objects.get(series_code="INV", financial_year="26-27")
+        self.assertEqual(series_26_27.last_number, 100)
+        # 27-28 series should be created with last_number = 1
+        series_27_28 = NumberSeries.objects.get(series_code="INV", financial_year="27-28")
+        self.assertEqual(series_27_28.last_number, 1)
+
+
+class TestNextNumberRollback(TransactionTestCase):
+    """Tests for rollback behavior - serial should not be consumed."""
+
+    def setUp(self):
+        NumberSeries.objects.all().delete()
+        settings = AppSettings.get_settings()
+        settings.invoice_prefix = "INV"
+        settings.series_start_number = 1
+        settings.financial_year_start_month = 4
+        settings.save()
+
+    def test_rolled_back_transaction_does_not_consume_serial(self):
+        """Test that a rolled-back transaction does not consume a serial number."""
+        # First successful call
+        with transaction.atomic():
+            result1 = next_number("INV", date(2026, 11, 5))
+        self.assertEqual(result1, "INV/261105/0001")
+
+        # Second call that rolls back
+        try:
+            with transaction.atomic():
+                result2 = next_number("INV", date(2026, 11, 5))
+                self.assertEqual(result2, "INV/261105/0002")
+                raise Exception("Force rollback")
+        except Exception:
+            pass  # Expected rollback
+
+        # Third call should get the same serial as the rolled-back one (0002)
+        with transaction.atomic():
+            result3 = next_number("INV", date(2026, 11, 5))
+        self.assertEqual(result3, "INV/261105/0002")
+
+        # Verify only 2 series numbers were actually used (0001 and 0002)
+        series = NumberSeries.objects.get(series_code="INV", financial_year="26-27")
+        self.assertEqual(series.last_number, 2)

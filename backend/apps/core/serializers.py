@@ -5,6 +5,7 @@ from decimal import Decimal
 from rest_framework import serializers
 
 from apps.core.models import AppSettings, GstRate
+from apps.core.services import series_start_locked
 
 
 class AppSettingsSerializer(serializers.ModelSerializer):
@@ -53,6 +54,11 @@ class AppSettingsSerializer(serializers.ModelSerializer):
     def validate_series_start_number(self, value):
         if value < 1:
             raise serializers.ValidationError("Must be at least 1.")
+        # Check if series_start_number is locked (any INV number issued)
+        if series_start_locked():
+            raise serializers.ValidationError(
+                "series_start_number cannot be changed after the first invoice number has been issued."
+            )
         return value
 
     def validate_commission_default_percent(self, value):

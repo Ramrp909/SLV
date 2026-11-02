@@ -1,11 +1,14 @@
 """Serializers for core app."""
 
+import re
 from decimal import Decimal
 
 from rest_framework import serializers
 
 from apps.core.models import AppSettings, GstRate
 from apps.core.services import series_start_locked
+
+PREFIX_RE = re.compile(r"^[A-Za-z0-9]{1,4}$")
 
 
 class AppSettingsSerializer(serializers.ModelSerializer):
@@ -50,6 +53,15 @@ class AppSettingsSerializer(serializers.ModelSerializer):
         if not (1 <= value <= 12):
             raise serializers.ValidationError("Must be between 1 and 12.")
         return value
+
+    def validate_invoice_prefix(self, value):
+        """Validate invoice_prefix: 1-4 alphanumeric characters, stored uppercase."""
+        if not value:
+            raise serializers.ValidationError("invoice_prefix is required.")
+        upper = value.upper()
+        if not PREFIX_RE.match(upper):
+            raise serializers.ValidationError("invoice_prefix must be 1-4 alphanumeric characters")
+        return upper
 
     def validate_series_start_number(self, value):
         if value < 1:

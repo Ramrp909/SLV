@@ -289,6 +289,56 @@ class TestSettingsAPI(TestCase):
         self.assertIsInstance(data["commission_default_percent"], str)
 
 
+class TestAppSettingsSerializerValidation(TestCase):
+    """Tests for AppSettingsSerializer validation."""
+
+    def setUp(self):
+        self.client = APIClient()
+        self.user = User.objects.create_user(username="owner", password="SecurePass123!")
+        self.login()
+
+    def login(self):
+        response = self.client.post(
+            "/api/v1/auth/login/",
+            {"username": "owner", "password": "SecurePass123!"},
+            format="json",
+        )
+        self.access_token = response.json()["access"]
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.access_token}")
+
+    def test_put_invoice_prefix_5_chars_rejected(self):
+        """Test PUT rejects invoice_prefix with 5 characters."""
+        response = self.client.put(
+            "/api/v1/settings/",
+            {"invoice_prefix": "INVOI"},  # 5 chars
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.json()["code"], "VALIDATION_ERROR")
+        self.assertIn("invoice_prefix", response.json()["fields"])
+
+    def test_put_invoice_prefix_with_slash_rejected(self):
+        """Test PUT rejects invoice_prefix with slash."""
+        response = self.client.put(
+            "/api/v1/settings/",
+            {"invoice_prefix": "IN/V"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.json()["code"], "VALIDATION_ERROR")
+        self.assertIn("invoice_prefix", response.json()["fields"])
+
+    def test_put_valid_invoice_prefix_accepted_and_uppercased(self):
+        """Test PUT accepts valid invoice_prefix and uppercases it."""
+        response = self.client.put(
+            "/api/v1/settings/",
+            {"invoice_prefix": "abc"},  # 3 chars, lowercase
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.json()["invoice_prefix"], "ABC")
+
+
 class TestGstRatesAPI(TestCase):
     """Tests for /api/v1/settings/gst-rates/ endpoints."""
 
@@ -851,3 +901,251 @@ class TestNextNumberRollback(TransactionTestCase):
         # Verify only 2 series numbers were actually used (0001 and 0002)
         series = NumberSeries.objects.get(series_code="INV", financial_year="26-27")
         self.assertEqual(series.last_number, 2)
+
+
+class TestNextNumberConcurrencyNewFY(TransactionTestCase):
+    """Concurrency test for creating a new financial year row."""
+
+    def setUp(self):
+        NumberSeries.objects.all().delete()
+        settings = AppSettings.get_settings()
+        settings.invoice_prefix = "INV"
+        settings.series_start_number = 1
+        settings.financial_year_start_month = 4
+        settings.save()
+
+    def test_concurrency_20_threads_new_fy_creation(self):
+        """Test 20 threads creating a new FY row produce 20 unique, contiguous serials."""
+        results = []
+        errors = []
+
+        def worker():
+            try:
+                # Each thread needs its own database connection
+                connection.close_if_unusable_or_obsolete()
+                with transaction.atomic():
+                    # Use a date in a FY that doesn't exist yet (2028-01-01 = FY 28-29)
+                    result = next_number("INV", date(2028, 1, 1))
+                    results.append(result)
+            except Exception as e:
+                errors.append(e)
+            finally:
+                connection.close()
+
+        threads = [Thread(target=worker) for _ in range(20)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+
+        self.assertEqual(len(errors), 0, f"Errors occurred: {errors}")
+        self.assertEqual(len(results), 20)
+
+        # Extract serial numbers and verify they are contiguous
+        serials = sorted([int(r.split("/")[-1]) for r in results])
+        self.assertEqual(serials, list(range(1, 21)))
+
+        # Verify format is correct for all results
+        for r in results:
+            self.assertTrue(r.startswith("INV/280101/"))
+
+
+class TestNextNumberCustomFYStartMonth(TransactionTestCase):
+    """Tests for custom financial_year_start_month setting."""
+
+    def setUp(self):
+        NumberSeries.objects.all().delete()
+        settings = AppSettings.get_settings()
+        settings.invoice_prefix = "INV"
+        settings.series_start_number = 1
+        settings.financial_year_start_month = 7  # July start
+        settings.save()
+
+    def test_july_start_fy_calculation(self):
+        """Test FY calculation with July start month."""
+        from apps.core.models import get_financial_year
+
+        # June 30, 2026 -> FY 25-26 (before July)
+        self.assertEqual(get_financial_year(date(2026, 6, 30), 7), "25-26")
+        # July 1, 2026 -> FY 26-27
+        self.assertEqual(get_financial_year(date(2026, 7, 1), 7), "26-27")
+        # Dec 31, 2026 -> FY 26-27
+        self.assertEqual(get_financial_year(date(2026, 12, 31), 7), "26-27")
+        # June 30, 2027 -> FY 26-27
+        self.assertEqual(get_financial_year(date(2027, 6, 30), 7), "26-27")
+        # July 1, 2027 -> FY 27-28
+        self.assertEqual(get_financial_year(date(2027, 7, 1), 7), "27-28")
+
+    def test_july_start_fy_boundary_next_number(self):
+        """Test next_number respects custom July FY start."""
+        # June 30, 2026 -> FY 25-26
+        with transaction.atomic():
+            result1 = next_number("INV", date(2026, 6, 30))
+        self.assertEqual(result1, "INV/260630/0001")
+        series_25_26 = NumberSeries.objects.get(series_code="INV", financial_year="25-26")
+        self.assertEqual(series_25_26.last_number, 1)
+
+        # July 1, 2026 -> FY 26-27 (new FY, serial restarts at 1)
+        with transaction.atomic():
+            result2 = next_number("INV", date(2026, 7, 1))
+        self.assertEqual(result2, "INV/260701/0001")
+        series_26_27 = NumberSeries.objects.get(series_code="INV", financial_year="26-27")
+        self.assertEqual(series_26_27.last_number, 1)
+        # 25-26 should be untouched
+        series_25_26.refresh_from_db()
+        self.assertEqual(series_25_26.last_number, 1)
+
+        # Another in same FY 26-27
+        with transaction.atomic():
+            result3 = next_number("INV", date(2026, 7, 2))
+        self.assertEqual(result3, "INV/260702/0002")
+
+
+class TestNextNumberPrefixValidation(TransactionTestCase):
+    """Tests for prefix validation in next_number."""
+
+    def setUp(self):
+        NumberSeries.objects.all().delete()
+        settings = AppSettings.get_settings()
+        settings.invoice_prefix = "INV"
+        settings.series_start_number = 1
+        settings.financial_year_start_month = 4
+        settings.save()
+
+    def test_invalid_prefix_too_long_raises_validation_error(self):
+        """Test that a prefix > 4 chars raises ValidationError and doesn't consume serial."""
+        settings = AppSettings.get_settings()
+        settings.invoice_prefix = "INVO"  # 4 chars is OK, 5 is not
+        settings.save()
+
+        # Create a series row first with valid prefix
+        with transaction.atomic():
+            next_number("INV", date(2026, 11, 5))
+
+        # Now change prefix to invalid (5 chars) directly on model
+        settings.invoice_prefix = "INVOI"  # 5 chars
+        settings.save()
+
+        # Should raise ValidationError and not consume serial
+        with self.assertRaises(ValidationError) as cm:
+            with transaction.atomic():
+                next_number("INV", date(2026, 11, 6))
+        self.assertIn("prefix", str(cm.exception).lower())
+
+        # Serial should not have been consumed
+        series = NumberSeries.objects.get(series_code="INV", financial_year="26-27")
+        self.assertEqual(series.last_number, 1)
+
+    def test_invalid_prefix_with_slash_raises_validation_error(self):
+        """Test that a prefix with slash raises ValidationError."""
+        settings = AppSettings.get_settings()
+        settings.invoice_prefix = "IN/V"  # slash not allowed
+        settings.save()
+
+        with self.assertRaises(ValidationError) as cm:
+            with transaction.atomic():
+                next_number("INV", date(2026, 11, 5))
+        self.assertIn("prefix", str(cm.exception).lower())
+
+    def test_prefix_change_after_first_invoice_same_fy_uses_old_prefix(self):
+        """Test changing invoice_prefix after first INV number uses old prefix in same FY."""
+        # Issue first INV number
+        with transaction.atomic():
+            result1 = next_number("INV", date(2026, 11, 5))
+        self.assertEqual(result1, "INV/261105/0001")
+
+        # Change prefix in settings
+        settings = AppSettings.get_settings()
+        settings.invoice_prefix = "NEW"
+        settings.save()
+
+        # Next number in SAME FY should use old prefix
+        with transaction.atomic():
+            result2 = next_number("INV", date(2026, 11, 6))
+        self.assertEqual(result2, "INV/261106/0002")
+
+        # But new FY should use new prefix
+        with transaction.atomic():
+            result3 = next_number("INV", date(2027, 4, 1))
+        self.assertEqual(result3, "NEW/270401/0001")
+
+    def test_valid_prefix_uppercase_stored(self):
+        """Test that valid prefix (1-4 chars, alnum) works and is uppercased."""
+        settings = AppSettings.get_settings()
+        settings.invoice_prefix = "abc"  # lowercase
+        settings.save()
+
+        with transaction.atomic():
+            result = next_number("INV", date(2026, 11, 5))
+        # Should be uppercased in the stored row
+        self.assertEqual(result, "ABC/261105/0001")
+        series = NumberSeries.objects.get(series_code="INV", financial_year="26-27")
+        self.assertEqual(series.prefix, "ABC")
+
+
+class TestNextNumberRetryLimit(TransactionTestCase):
+    """Tests for retry limit on IntegrityError."""
+
+    def setUp(self):
+        NumberSeries.objects.all().delete()
+        settings = AppSettings.get_settings()
+        settings.invoice_prefix = "INV"
+        settings.series_start_number = 1
+        settings.financial_year_start_month = 4
+        settings.save()
+
+    def test_retry_stops_after_5_attempts(self):
+        """Test that retry loop stops after 5 IntegrityError attempts and re-raises."""
+        from unittest.mock import patch
+
+        # Mock get_or_create to always raise IntegrityError
+        with patch.object(NumberSeries.objects, "select_for_update") as mock_select_for_update:
+            mock_manager = mock_select_for_update.return_value
+            mock_manager.get_or_create.side_effect = IntegrityError("duplicate key")
+
+            with self.assertRaises(IntegrityError):
+                with transaction.atomic():
+                    next_number("INV", date(2026, 11, 5))
+
+            # Verify it was called 5 times (the retry limit)
+            self.assertEqual(mock_manager.get_or_create.call_count, 5)
+
+
+class TestFirstEverINVRule(TransactionTestCase):
+    """Tests for the first-ever-INV series_start_number rule."""
+
+    def setUp(self):
+        NumberSeries.objects.all().delete()
+        settings = AppSettings.get_settings()
+        settings.invoice_prefix = "INV"
+        settings.series_start_number = 215
+        settings.financial_year_start_month = 4
+        settings.save()
+
+    def test_first_ever_inv_uses_series_start_number(self):
+        """Test first ever INV row uses series_start_number (215 -> 0215)."""
+        with transaction.atomic():
+            result = next_number("INV", date(2026, 11, 5))
+        self.assertEqual(result, "INV/261105/0215")
+
+        # Next should be 216
+        with transaction.atomic():
+            result2 = next_number("INV", date(2026, 11, 5))
+        self.assertEqual(result2, "INV/261105/0216")
+
+    def test_cn_ignores_series_start_number(self):
+        """Test CN series ignores series_start_number and starts at 1."""
+        with transaction.atomic():
+            result = next_number("CN", date(2026, 11, 5))
+        self.assertEqual(result, "CN/261105/0001")
+
+    def test_later_fy_ignores_series_start_number(self):
+        """Test later financial year ignores series_start_number and starts at 1."""
+        # Create first FY
+        with transaction.atomic():
+            next_number("INV", date(2026, 11, 5))
+
+        # Next FY should start at 1, not 215
+        with transaction.atomic():
+            result = next_number("INV", date(2027, 4, 1))
+        self.assertEqual(result, "INV/270401/0001")

@@ -1,4 +1,4 @@
-"""Models for core app: AppSettings, GstRate, and NumberSeries."""
+"""Models for core app: AppSettings, GstRate, NumberSeries, and AuditLog."""
 
 from datetime import date
 from decimal import Decimal
@@ -11,6 +11,70 @@ from django.db.models import Q
 def get_default_attendance_weights():
     """Default attendance weights."""
     return {"P": 1, "HD": 0.5, "PL": 1, "UL": 0, "A": 0, "H": 1}
+
+
+class AuditLogManager(models.Manager):
+    """Manager that blocks update, delete, and bulk_update."""
+
+    def get_queryset(self):
+        return AuditLogQuerySet(self.model, using=self._db)
+
+
+class AuditLogQuerySet(models.QuerySet):
+    """QuerySet that blocks update, delete, and bulk_update."""
+
+    def update(self, *args, **kwargs):
+        raise ValidationError("Audit log is append-only; updates are not allowed.")
+
+    def delete(self):
+        raise ValidationError("Audit log is append-only; deletes are not allowed.")
+
+    def bulk_update(self, objs, fields, batch_size=None):
+        raise ValidationError("Audit log is append-only; bulk updates are not allowed.")
+
+
+class AuditLog(models.Model):
+    """
+    Append-only audit log.
+
+    Records are never updated or deleted. Corrections are new rows.
+    Enforced at three layers:
+    1. Model save()/delete() raise ValidationError on existing rows
+    2. Custom manager/queryset block update()/delete()/bulk_update()
+    3. PostgreSQL trigger blocks raw SQL UPDATE/DELETE (allows TRUNCATE for tests)
+    """
+
+    timestamp = models.DateTimeField(auto_now_add=True, db_index=True)
+    action = models.CharField(max_length=100, db_index=True)
+    entity_type = models.CharField(max_length=100)
+    entity_id = models.TextField()
+    summary = models.TextField()
+    before_json = models.JSONField(null=True, blank=True)
+    after_json = models.JSONField(null=True, blank=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    actor_id = models.BigIntegerField(null=True, blank=True)
+    actor_username = models.CharField(max_length=150, null=True, blank=True)
+
+    objects = AuditLogManager()
+
+    class Meta:
+        ordering = ["-timestamp", "-id"]
+        indexes = [
+            models.Index(fields=["entity_type", "entity_id"]),
+        ]
+        verbose_name = "Audit Log"
+        verbose_name_plural = "Audit Logs"
+
+    def __str__(self):
+        return f"{self.timestamp} - {self.action} - {self.entity_type}:{self.entity_id}"
+
+    def save(self, *args, **kwargs):
+        if self.pk is not None:
+            raise ValidationError("Audit log is append-only; existing entries cannot be modified.")
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        raise ValidationError("Audit log is append-only; entries cannot be deleted.")
 
 
 class AppSettings(models.Model):

@@ -1,15 +1,17 @@
 """Views for core app."""
 
+from common.pagination import StandardPagination
 from django.http import JsonResponse
-from drf_spectacular.utils import OpenApiResponse, extend_schema
+from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.core.models import AppSettings, GstRate
+from apps.core.models import AppSettings, AuditLog, GstRate
 from apps.core.serializers import (
     AppSettingsSerializer,
+    AuditLogSerializer,
     GstRateCreateSerializer,
     GstRateSerializer,
 )
@@ -176,3 +178,93 @@ class GstRateDetailView(APIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+@extend_schema(
+    tags=["system"],
+    summary="List audit log entries",
+    description="List audit log entries with filtering. Read-only endpoint.",
+    parameters=[
+        OpenApiParameter(name="action", type=str, description="Filter by action"),
+        OpenApiParameter(name="entity_type", type=str, description="Filter by entity type"),
+        OpenApiParameter(name="entity_id", type=str, description="Filter by entity ID"),
+        OpenApiParameter(
+            name="date_from", type=str, description="Filter by date from (YYYY-MM-DD)"
+        ),
+        OpenApiParameter(name="date_to", type=str, description="Filter by date to (YYYY-MM-DD)"),
+        OpenApiParameter(name="search", type=str, description="Search in summary"),
+    ],
+    responses={
+        200: OpenApiResponse(description="Paginated list of audit log entries"),
+        401: OpenApiResponse(description="Unauthenticated"),
+        405: OpenApiResponse(description="Method not allowed"),
+    },
+)
+class AuditLogView(APIView):
+    """GET /api/v1/audit-log/ - read-only audit log."""
+
+    permission_classes = [IsAuthenticated]
+    serializer_class = AuditLogSerializer
+    pagination_class = StandardPagination
+
+    def get(self, request):
+        queryset = AuditLog.objects.all()
+
+        # Filter by action
+        action = request.query_params.get("action")
+        if action:
+            queryset = queryset.filter(action=action)
+
+        # Filter by entity_type
+        entity_type = request.query_params.get("entity_type")
+        if entity_type:
+            queryset = queryset.filter(entity_type=entity_type)
+
+        # Filter by entity_id
+        entity_id = request.query_params.get("entity_id")
+        if entity_id:
+            queryset = queryset.filter(entity_id=entity_id)
+
+        # Filter by date_from
+        date_from = request.query_params.get("date_from")
+        if date_from:
+            queryset = queryset.filter(timestamp__date__gte=date_from)
+
+        # Filter by date_to
+        date_to = request.query_params.get("date_to")
+        if date_to:
+            queryset = queryset.filter(timestamp__date__lte=date_to)
+
+        # Search in summary
+        search = request.query_params.get("search")
+        if search:
+            queryset = queryset.filter(summary__icontains=search)
+
+        paginator = self.pagination_class()
+        page = paginator.paginate_queryset(queryset, request)
+        serializer = AuditLogSerializer(page, many=True)
+        return paginator.get_paginated_response(serializer.data)
+
+    def post(self, request):
+        return Response(
+            {"code": "METHOD_NOT_ALLOWED", "message": "POST not allowed", "fields": {}},
+            status=status.HTTP_405_METHOD_NOT_ALLOWED,
+        )
+
+    def put(self, request):
+        return Response(
+            {"code": "METHOD_NOT_ALLOWED", "message": "PUT not allowed", "fields": {}},
+            status=status.HTTP_405_METHOD_NOT_ALLOWED,
+        )
+
+    def patch(self, request):
+        return Response(
+            {"code": "METHOD_NOT_ALLOWED", "message": "PATCH not allowed", "fields": {}},
+            status=status.HTTP_405_METHOD_NOT_ALLOWED,
+        )
+
+    def delete(self, request):
+        return Response(
+            {"code": "METHOD_NOT_ALLOWED", "message": "DELETE not allowed", "fields": {}},
+            status=status.HTTP_405_METHOD_NOT_ALLOWED,
+        )

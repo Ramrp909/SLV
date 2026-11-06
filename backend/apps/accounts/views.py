@@ -21,6 +21,7 @@ from apps.accounts.serializers import (
     RefreshResponseSerializer,
 )
 from apps.accounts.services import AuthenticationService, TokenCookieService
+from apps.core.services import AuditService
 
 
 class LoginRateThrottle(AnonRateThrottle):
@@ -77,6 +78,15 @@ class LoginView(GenericAPIView):
         user = AuthenticationService.authenticate_user(username, password, request)
 
         if user is None:
+            # Record failed login audit entry (username only, never password)
+            AuditService.record(
+                action="auth.login_failed",
+                entity_type="User",
+                entity_id=username,
+                summary=f"Failed login attempt for user: {username}",
+                request=request,
+                actor=None,
+            )
             # Generic error for both wrong password and lockout
             return Response(
                 {
@@ -100,7 +110,15 @@ class LoginView(GenericAPIView):
         # Set refresh token as httpOnly cookie
         TokenCookieService.set_refresh_cookie(response, tokens["refresh"])
 
-        # TODO: Write audit entry for successful login
+        # Record successful login audit entry
+        AuditService.record(
+            action="auth.login",
+            entity_type="User",
+            entity_id=str(user.pk),
+            summary="User logged in successfully",
+            request=request,
+            actor=user,
+        )
 
         return response
 
@@ -216,6 +234,22 @@ class LogoutView(APIView):
     def post(self, request):
         refresh_token = TokenCookieService.get_refresh_token_from_request(request)
 
+        # Get user from refresh token for audit
+        user = None
+        if refresh_token:
+            from rest_framework_simplejwt.tokens import RefreshToken
+
+            try:
+                refresh = RefreshToken(refresh_token)
+                user_id = refresh.payload.get("user_id")
+                if user_id:
+                    from django.contrib.auth import get_user_model
+
+                    User = get_user_model()
+                    user = User.objects.filter(id=user_id).first()
+            except Exception:
+                pass
+
         if refresh_token:
             AuthenticationService.logout(refresh_token)
 
@@ -227,7 +261,15 @@ class LogoutView(APIView):
         # Clear refresh cookie
         TokenCookieService.clear_refresh_cookie(response)
 
-        # TODO: Write audit entry for logout
+        # Record logout audit entry
+        AuditService.record(
+            action="auth.logout",
+            entity_type="User",
+            entity_id=str(user.pk) if user else "unknown",
+            summary="User logged out",
+            request=request,
+            actor=user,
+        )
 
         return response
 
@@ -267,7 +309,7 @@ class ChangePasswordView(APIView):
             )
 
         try:
-            AuthenticationService.change_password(request.user, old_password, new_password)
+            AuthenticationService.change_password(request.user, old_password, new_password, request)
         except ValidationError as e:
             return Response(
                 {

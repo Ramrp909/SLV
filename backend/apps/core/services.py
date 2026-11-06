@@ -1,14 +1,128 @@
 """Services for core app."""
 
 import re
-from datetime import date
+import uuid
+from datetime import date, datetime
+from decimal import Decimal
+from typing import Any
 
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
 
-from apps.core.models import AppSettings, NumberSeries, get_financial_year
+from apps.core.models import AppSettings, AuditLog, NumberSeries, get_financial_year
 
 PREFIX_RE = re.compile(r"^[A-Za-z0-9]{1,4}$")
+
+# Keys that should be redacted in audit logs (case-insensitive)
+REDACTED_KEYS = {
+    "password",
+    "old_password",
+    "new_password",
+    "old-password",
+    "new-password",
+    "token",
+    "access",
+    "refresh",
+    "secret",
+    "authorization",
+}
+
+
+def _json_safe(value: Any) -> Any:
+    """Convert a value to JSON-safe representation."""
+    if isinstance(value, Decimal):
+        return str(value)
+    if isinstance(value, date | datetime):
+        return value.isoformat()
+    if isinstance(value, uuid.UUID):
+        return str(value)
+    if isinstance(value, dict):
+        return {k: _json_safe(v) for k, v in value.items()}
+    if isinstance(value, list | tuple | set):
+        return [_json_safe(v) for v in value]
+    return value
+
+
+def _redact_secrets(data: Any) -> Any:
+    """Recursively redact sensitive keys in data structures."""
+    if isinstance(data, dict):
+        result = {}
+        for key, value in data.items():
+            if key.lower() in REDACTED_KEYS:
+                result[key] = "[REDACTED]"
+            else:
+                result[key] = _redact_secrets(value)
+        return result
+    if isinstance(data, list | tuple | set):
+        return [_redact_secrets(v) for v in data]
+    return data
+
+
+def _get_client_ip(request) -> str:
+    """Extract client IP from request - uses REMOTE_ADDR only, never X-Forwarded-For."""
+    if request is None:
+        return "127.0.0.1"
+    return request.META.get("REMOTE_ADDR", "127.0.0.1")
+
+
+class AuditService:
+    """Service for recording audit log entries."""
+
+    @staticmethod
+    def record(
+        action: str,
+        entity_type: str,
+        entity_id: str,
+        summary: str,
+        before: dict | None = None,
+        after: dict | None = None,
+        request=None,
+        actor=None,
+    ) -> AuditLog:
+        """
+        Record an audit log entry.
+
+        Runs in the caller's transaction so it commits/rolls back with the action.
+
+        Args:
+            action: Action name (e.g., "auth.login", "settings.updated")
+            entity_type: Type of entity (e.g., "User", "AppSettings")
+            entity_id: Entity identifier as string
+            summary: Human-readable summary (truncated to 500 chars)
+            before: State before change (dict, optional)
+            after: State after change (dict, optional)
+            request: HTTP request object (for IP address)
+            actor: User model instance (for actor_id and actor_username)
+
+        Returns:
+            The created AuditLog entry.
+        """
+        # Convert to JSON-safe and redact secrets
+        before_safe = _redact_secrets(_json_safe(before)) if before is not None else None
+        after_safe = _redact_secrets(_json_safe(after)) if after is not None else None
+
+        # Truncate summary to 500 characters
+        summary = summary[:500] if summary else ""
+
+        # Get IP address
+        ip_address = _get_client_ip(request)
+
+        # Get actor info
+        actor_id = actor.id if actor else None
+        actor_username = actor.username[:150] if actor and actor.username else None
+
+        entry = AuditLog.objects.create(
+            action=action,
+            entity_type=entity_type,
+            entity_id=str(entity_id),
+            summary=summary,
+            before_json=before_safe,
+            after_json=after_safe,
+            ip_address=ip_address,
+            actor_id=actor_id,
+            actor_username=actor_username,
+        )
+        return entry
 
 
 def next_number(series_code: str, document_date: date) -> str:

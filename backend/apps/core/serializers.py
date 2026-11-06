@@ -5,10 +5,31 @@ from decimal import Decimal
 
 from rest_framework import serializers
 
-from apps.core.models import AppSettings, GstRate
-from apps.core.services import series_start_locked
+from apps.core.models import AppSettings, AuditLog, GstRate
+from apps.core.services import AuditService, series_start_locked
 
 PREFIX_RE = re.compile(r"^[A-Za-z0-9]{1,4}$")
+
+
+class AuditLogSerializer(serializers.ModelSerializer):
+    """Serializer for AuditLog - read-only."""
+
+    class Meta:
+        model = AuditLog
+        fields = [
+            "id",
+            "timestamp",
+            "action",
+            "entity_type",
+            "entity_id",
+            "summary",
+            "before_json",
+            "after_json",
+            "ip_address",
+            "actor_id",
+            "actor_username",
+        ]
+        read_only_fields = fields
 
 
 class AppSettingsSerializer(serializers.ModelSerializer):
@@ -94,8 +115,25 @@ class AppSettingsSerializer(serializers.ModelSerializer):
         return value
 
     def update(self, instance, validated_data):
-        # TODO: Write audit entry for settings change (T-104)
-        return super().update(instance, validated_data)
+        # Capture before state
+        before = {field: getattr(instance, field) for field in validated_data.keys()}
+        instance = super().update(instance, validated_data)
+        # Capture after state
+        after = {field: getattr(instance, field) for field in validated_data.keys()}
+        # Record audit entry
+        request = self.context.get("request")
+        actor = request.user if request and hasattr(request, "user") else None
+        AuditService.record(
+            action="settings.updated",
+            entity_type="AppSettings",
+            entity_id=str(instance.pk),
+            summary="App settings updated",
+            before=before,
+            after=after,
+            request=request,
+            actor=actor,
+        )
+        return instance
 
 
 class GstRateSerializer(serializers.ModelSerializer):
@@ -115,8 +153,25 @@ class GstRateSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         # Only allow updating label and is_active
         # rate is read-only so it won't be in validated_data
-        # TODO: Write audit entry for GST rate change (T-104)
-        return super().update(instance, validated_data)
+        # Capture before state
+        before = {field: getattr(instance, field) for field in validated_data.keys()}
+        instance = super().update(instance, validated_data)
+        # Capture after state
+        after = {field: getattr(instance, field) for field in validated_data.keys()}
+        # Record audit entry
+        request = self.context.get("request")
+        actor = request.user if request and hasattr(request, "user") else None
+        AuditService.record(
+            action="gst_rate.updated",
+            entity_type="GstRate",
+            entity_id=str(instance.pk),
+            summary="GST rate updated",
+            before=before,
+            after=after,
+            request=request,
+            actor=actor,
+        )
+        return instance
 
 
 class GstRateCreateSerializer(serializers.ModelSerializer):
@@ -136,5 +191,17 @@ class GstRateCreateSerializer(serializers.ModelSerializer):
         return value
 
     def create(self, validated_data):
-        # TODO: Write audit entry for GST rate creation (T-104)
-        return super().create(validated_data)
+        instance = super().create(validated_data)
+        # Record audit entry
+        request = self.context.get("request")
+        actor = request.user if request and hasattr(request, "user") else None
+        AuditService.record(
+            action="gst_rate.created",
+            entity_type="GstRate",
+            entity_id=str(instance.pk),
+            summary="GST rate created",
+            after={k: getattr(instance, k) for k in validated_data.keys()},
+            request=request,
+            actor=actor,
+        )
+        return instance

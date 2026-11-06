@@ -8,6 +8,7 @@ from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 
 from apps.accounts.models import LoginAttempt
+from apps.core.services import AuditService
 
 User = get_user_model()
 
@@ -108,7 +109,7 @@ class AuthenticationService:
             pass
 
     @staticmethod
-    def change_password(user: User, old_password: str, new_password: str) -> None:
+    def change_password(user: User, old_password: str, new_password: str, request=None) -> None:
         """
         Change user password and invalidate all refresh tokens.
 
@@ -116,6 +117,7 @@ class AuthenticationService:
             user: The user changing password
             old_password: Current password for verification
             new_password: New password
+            request: HTTP request object (for audit logging)
 
         Raises:
             ValidationError: If old password is wrong or new password fails validation
@@ -130,7 +132,15 @@ class AuthenticationService:
         user.set_password(new_password)
         user.save()
 
-        # TODO: Write audit entry for password change
+        # Record audit entry for password change
+        AuditService.record(
+            action="auth.password_changed",
+            entity_type="User",
+            entity_id=str(user.pk),
+            summary="Password changed",
+            request=request,
+            actor=user,
+        )
 
         # Invalidate all refresh tokens for this user
         # We need to blacklist all outstanding tokens for this user

@@ -294,6 +294,46 @@ class NumberSeries(models.Model):
         return f"{self.series_code}/{self.financial_year} (last: {self.last_number})"
 
 
+class IdempotencyRecord(models.Model):
+    """
+    Idempotency record for preventing duplicate request processing.
+
+    A record is created ONLY after a request succeeds (2xx response).
+    Failed requests (4xx, 5xx, exceptions) do NOT create a record, allowing retry.
+
+    Unique constraint on (user_id, key) ensures same key from same user
+    cannot be used twice with different payloads.
+    """
+
+    user_id = models.BigIntegerField(db_index=True)
+    key = models.UUIDField()
+    method = models.CharField(max_length=10)
+    path = models.CharField(max_length=500)
+    request_hash = models.CharField(max_length=64)  # SHA-256 hex
+    response_status = models.PositiveSmallIntegerField()
+    response_body = models.JSONField()
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user_id", "key"],
+                name="idempotency_unique_user_key",
+            )
+        ]
+        indexes = [
+            models.Index(fields=["created_at"]),
+        ]
+        ordering = ["-created_at"]
+        verbose_name = "Idempotency Record"
+        verbose_name_plural = "Idempotency Records"
+
+    def __str__(self):
+        return (
+            f"IdempotencyRecord(user={self.user_id}, key={self.key}, status={self.response_status})"
+        )
+
+
 def get_financial_year(document_date: date, start_month: int = 4) -> str:
     """
     Calculate financial year from document date.

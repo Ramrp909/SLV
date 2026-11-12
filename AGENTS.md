@@ -29,6 +29,7 @@ Single-owner paint and hardware shop: inventory, GST invoicing, customers and du
 - Python 3.12, type hints on public functions, `ruff` for lint and format. Every database change is a committed migration.
 - Standard error format: `{ "code": "...", "message": "...", "fields": {...} }`. Lists use `page` and `page_size`; money returned as strings.
 - Do not add new dependencies, rename existing models/fields, or change the database schema outside the current task without asking.
+- **Never write absolute paths, drive letters or machine-specific folders in code, tests or CI. Use BASE_DIR, pathlib and tempfile, and make sure tests pass on both Windows and Linux.**
 
 ## How to work on a task
 1. Read the task prompt and the attached blueprint sections only. Restate the goal in two lines.

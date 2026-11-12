@@ -8,7 +8,7 @@
 
 param(
     [Parameter(Mandatory=$false)]
-    [ValidateSet('install', 'run', 'test', 'lint', 'migrate', 'seed', 'db-up', 'db-down', 'db-logs', 'backend-install', 'frontend-install', 'run-backend', 'run-frontend', 'backend-lint', 'frontend-lint', 'makemigrations', 'help')]
+    [ValidateSet('install', 'run', 'test', 'lint', 'migrate', 'seed', 'db-up', 'db-down', 'db-logs', 'openapi', 'backend-install', 'frontend-install', 'run-backend', 'run-frontend', 'backend-lint', 'frontend-lint', 'makemigrations', 'help')]
     [string]$Target = 'help'
 )
 
@@ -23,6 +23,7 @@ function Write-Help {
     Write-Host "  db-up            - Start PostgreSQL database"
     Write-Host "  db-down          - Stop PostgreSQL database"
     Write-Host "  db-logs          - Show database logs"
+    Write-Host "  openapi          - Export OpenAPI schema to docs/openapi.json"
     Write-Host "  backend-install  - Install backend dependencies only"
     Write-Host "  frontend-install - Install frontend dependencies only"
     Write-Host "  run-backend      - Start Django development server"
@@ -104,6 +105,14 @@ function Invoke-DbLogs {
     docker compose logs -f db
 }
 
+function Invoke-OpenApi {
+    Write-Host "Exporting OpenAPI schema..." -ForegroundColor Green
+    Set-Location "backend"
+    & ".\venv\Scripts\Activate.ps1"
+    python manage.py export_openapi
+    Set-Location ".."
+}
+
 function Invoke-RunBackend {
     Write-Host "Starting Django development server..." -ForegroundColor Green
     Set-Location "backend"
@@ -155,6 +164,7 @@ switch ($Target) {
     'db-up' { Invoke-DbUp }
     'db-down' { Invoke-DbDown }
     'db-logs' { Invoke-DbLogs }
+    'openapi' { Invoke-OpenApi }
     'run-backend' { Invoke-RunBackend }
     'run-frontend' { Invoke-RunFrontend }
     'makemigrations' { Invoke-MakeMigrations }

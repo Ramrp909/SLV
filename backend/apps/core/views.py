@@ -1,5 +1,10 @@
 """Views for core app."""
 
+from common.errors import (
+    METHOD_NOT_ALLOWED,
+    NOT_FOUND,
+    VALIDATION_ERROR,
+)
 from common.pagination import StandardPagination
 from django.http import JsonResponse
 from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
@@ -41,7 +46,7 @@ def api_404_view(request, exception=None):
     if request.path.startswith("/api/"):
         return JsonResponse(
             {
-                "code": "NOT_FOUND",
+                "code": NOT_FOUND,
                 "message": "Not found",
                 "fields": {},
             },
@@ -153,7 +158,7 @@ class GstRateDetailView(APIView):
         except GstRate.DoesNotExist:
             return Response(
                 {
-                    "code": "NOT_FOUND",
+                    "code": NOT_FOUND,
                     "message": "GST rate not found",
                     "fields": {},
                 },
@@ -167,7 +172,7 @@ class GstRateDetailView(APIView):
         if not update_data:
             return Response(
                 {
-                    "code": "VALIDATION_ERROR",
+                    "code": VALIDATION_ERROR,
                     "message": "Only label and is_active can be updated",
                     "fields": {},
                 },
@@ -247,24 +252,24 @@ class AuditLogView(APIView):
 
     def post(self, request):
         return Response(
-            {"code": "METHOD_NOT_ALLOWED", "message": "POST not allowed", "fields": {}},
+            {"code": METHOD_NOT_ALLOWED, "message": "POST not allowed", "fields": {}},
             status=status.HTTP_405_METHOD_NOT_ALLOWED,
         )
 
     def put(self, request):
         return Response(
-            {"code": "METHOD_NOT_ALLOWED", "message": "PUT not allowed", "fields": {}},
+            {"code": METHOD_NOT_ALLOWED, "message": "PUT not allowed", "fields": {}},
             status=status.HTTP_405_METHOD_NOT_ALLOWED,
         )
 
     def patch(self, request):
         return Response(
-            {"code": "METHOD_NOT_ALLOWED", "message": "PATCH not allowed", "fields": {}},
+            {"code": METHOD_NOT_ALLOWED, "message": "PATCH not allowed", "fields": {}},
             status=status.HTTP_405_METHOD_NOT_ALLOWED,
         )
 
     def delete(self, request):
         return Response(
-            {"code": "METHOD_NOT_ALLOWED", "message": "DELETE not allowed", "fields": {}},
+            {"code": METHOD_NOT_ALLOWED, "message": "DELETE not allowed", "fields": {}},
             status=status.HTTP_405_METHOD_NOT_ALLOWED,
         )

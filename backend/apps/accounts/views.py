@@ -1,5 +1,6 @@
 """Views for accounts authentication."""
 
+from common.errors import AUTHENTICATION_FAILED, CSRF_FAILED, VALIDATION_ERROR
 from django.core.exceptions import ValidationError
 from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from rest_framework import status
@@ -68,7 +69,7 @@ class LoginView(GenericAPIView):
         if not username or not password:
             return Response(
                 {
-                    "code": "VALIDATION_ERROR",
+                    "code": VALIDATION_ERROR,
                     "message": "Username and password are required",
                     "fields": {"username": "Required", "password": "Required"},
                 },
@@ -90,7 +91,7 @@ class LoginView(GenericAPIView):
             # Generic error for both wrong password and lockout
             return Response(
                 {
-                    "code": "AUTHENTICATION_FAILED",
+                    "code": AUTHENTICATION_FAILED,
                     "message": "Invalid username or password, or account temporarily locked",
                     "fields": {},
                 },
@@ -157,7 +158,7 @@ class RefreshView(APIView):
         if request.META.get("HTTP_X_REQUESTED_WITH") != "XMLHttpRequest":
             return Response(
                 {
-                    "code": "CSRF_FAILED",
+                    "code": CSRF_FAILED,
                     "message": "Invalid request",
                     "fields": {},
                 },
@@ -168,7 +169,7 @@ class RefreshView(APIView):
         if request.data.get("refresh"):
             return Response(
                 {
-                    "code": "VALIDATION_ERROR",
+                    "code": VALIDATION_ERROR,
                     "message": "Refresh token must be sent via cookie, not request body",
                     "fields": {"refresh": "Must be sent via httpOnly cookie"},
                 },
@@ -181,7 +182,7 @@ class RefreshView(APIView):
         if not refresh_token:
             return Response(
                 {
-                    "code": "AUTHENTICATION_FAILED",
+                    "code": AUTHENTICATION_FAILED,
                     "message": "Refresh token not found",
                     "fields": {},
                 },
@@ -193,7 +194,7 @@ class RefreshView(APIView):
         except TokenError:
             return Response(
                 {
-                    "code": "AUTHENTICATION_FAILED",
+                    "code": AUTHENTICATION_FAILED,
                     "message": "Invalid or expired refresh token",
                     "fields": {},
                 },
@@ -298,7 +299,7 @@ class ChangePasswordView(APIView):
         if not old_password or not new_password:
             return Response(
                 {
-                    "code": "VALIDATION_ERROR",
+                    "code": VALIDATION_ERROR,
                     "message": "Old password and new password are required",
                     "fields": {
                         "old_password": "Required" if not old_password else None,
@@ -313,7 +314,7 @@ class ChangePasswordView(APIView):
         except ValidationError as e:
             return Response(
                 {
-                    "code": "VALIDATION_ERROR",
+                    "code": VALIDATION_ERROR,
                     "message": str(e.message) if hasattr(e, "message") else str(e),
                     "fields": {"old_password": "Incorrect password"}
                     if "incorrect" in str(e).lower()

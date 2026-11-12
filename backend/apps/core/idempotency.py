@@ -9,6 +9,12 @@ import json
 import uuid
 from functools import wraps
 
+from common.errors import (
+    IDEMPOTENCY_IN_PROGRESS,
+    IDEMPOTENCY_KEY_INVALID,
+    IDEMPOTENCY_KEY_REQUIRED,
+    IDEMPOTENCY_KEY_REUSED,
+)
 from django.conf import settings
 from django.db import IntegrityError, transaction
 from drf_spectacular.utils import OpenApiParameter
@@ -175,7 +181,7 @@ def idempotent(view_func):
         if not idempotency_key:
             return Response(
                 {
-                    "code": "IDEMPOTENCY_KEY_REQUIRED",
+                    "code": IDEMPOTENCY_KEY_REQUIRED,
                     "message": "Idempotency-Key header is required",
                     "fields": {},
                 },
@@ -188,7 +194,7 @@ def idempotent(view_func):
         except ValueError:
             return Response(
                 {
-                    "code": "IDEMPOTENCY_KEY_INVALID",
+                    "code": IDEMPOTENCY_KEY_INVALID,
                     "message": "Idempotency-Key must be a valid UUID",
                     "fields": {},
                 },
@@ -246,7 +252,7 @@ def idempotent(view_func):
                         transaction.set_rollback(True)
                         response = Response(
                             {
-                                "code": "IDEMPOTENCY_IN_PROGRESS",
+                                "code": IDEMPOTENCY_IN_PROGRESS,
                                 "message": (
                                     "Another request with the same Idempotency-Key "
                                     "is in progress. Please retry."
@@ -314,7 +320,7 @@ def idempotent(view_func):
             if existing.response_status == 0:
                 response = Response(
                     {
-                        "code": "IDEMPOTENCY_IN_PROGRESS",
+                        "code": IDEMPOTENCY_IN_PROGRESS,
                         "message": "Another request with the same Idempotency-Key is in progress. Please retry.",
                         "fields": {},
                     },
@@ -329,7 +335,7 @@ def idempotent(view_func):
             ):
                 return Response(
                     {
-                        "code": "IDEMPOTENCY_KEY_REUSED",
+                        "code": IDEMPOTENCY_KEY_REUSED,
                         "message": (
                             "Idempotency-Key already used with a different request "
                             "(method, path, or payload differs from original)"

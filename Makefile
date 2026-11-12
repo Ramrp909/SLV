@@ -1,4 +1,4 @@
-.PHONY: install run test lint migrate seed db-up db-down db-logs help
+.PHONY: install run test lint migrate seed db-up db-down db-logs openapi help
 
 # Default target
 help:
@@ -12,6 +12,7 @@ help:
 	@echo "  db-up     - Start PostgreSQL database"
 	@echo "  db-down   - Stop PostgreSQL database"
 	@echo "  db-logs   - Show database logs"
+	@echo "  openapi   - Export OpenAPI schema to docs/openapi.json"
 
 # Install dependencies
 install: backend-install frontend-install
@@ -72,3 +73,7 @@ up: db-up
 	@echo "Database started. Run 'make run-backend' and 'make run-frontend' separately."
 
 down: db-down
+
+# OpenAPI schema export
+openapi:
+	cd backend && . venv/bin/activate && python manage.py export_openapi

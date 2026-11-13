@@ -1,0 +1,2006 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Paint Shop API",
+    "version": "1.0",
+    "description": "API for single-owner paint and hardware shop management"
+  },
+  "paths": {
+    "/api/v1/audit-log/": {
+      "get": {
+        "operationId": "audit_log_retrieve",
+        "description": "List audit log entries with filtering. Read-only endpoint.",
+        "summary": "List audit log entries",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "action",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by action"
+          },
+          {
+            "in": "query",
+            "name": "date_from",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by date from (YYYY-MM-DD)"
+          },
+          {
+            "in": "query",
+            "name": "date_to",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by date to (YYYY-MM-DD)"
+          },
+          {
+            "in": "query",
+            "name": "entity_id",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by entity ID"
+          },
+          {
+            "in": "query",
+            "name": "entity_type",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by entity type"
+          },
+          {
+            "in": "query",
+            "name": "search",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Search in summary"
+          }
+        ],
+        "tags": [
+          "system"
+        ],
+        "security": [
+          {
+            "jwtAuth": []
+          },
+          {
+            "Bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated list of audit log entries"
+          },
+          "401": {
+            "description": "Unauthenticated"
+          },
+          "405": {
+            "description": "Method not allowed"
+          }
+        }
+      },
+      "post": {
+        "operationId": "audit_log_create",
+        "description": "List audit log entries with filtering. Read-only endpoint.",
+        "summary": "List audit log entries",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "action",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by action"
+          },
+          {
+            "in": "query",
+            "name": "date_from",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by date from (YYYY-MM-DD)"
+          },
+          {
+            "in": "query",
+            "name": "date_to",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by date to (YYYY-MM-DD)"
+          },
+          {
+            "in": "query",
+            "name": "entity_id",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by entity ID"
+          },
+          {
+            "in": "query",
+            "name": "entity_type",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by entity type"
+          },
+          {
+            "in": "query",
+            "name": "search",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Search in summary"
+          }
+        ],
+        "tags": [
+          "system"
+        ],
+        "security": [
+          {
+            "jwtAuth": []
+          },
+          {
+            "Bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated list of audit log entries"
+          },
+          "401": {
+            "description": "Unauthenticated"
+          },
+          "405": {
+            "description": "Method not allowed"
+          }
+        }
+      },
+      "put": {
+        "operationId": "audit_log_update",
+        "description": "List audit log entries with filtering. Read-only endpoint.",
+        "summary": "List audit log entries",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "action",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by action"
+          },
+          {
+            "in": "query",
+            "name": "date_from",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by date from (YYYY-MM-DD)"
+          },
+          {
+            "in": "query",
+            "name": "date_to",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by date to (YYYY-MM-DD)"
+          },
+          {
+            "in": "query",
+            "name": "entity_id",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by entity ID"
+          },
+          {
+            "in": "query",
+            "name": "entity_type",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by entity type"
+          },
+          {
+            "in": "query",
+            "name": "search",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Search in summary"
+          }
+        ],
+        "tags": [
+          "system"
+        ],
+        "security": [
+          {
+            "jwtAuth": []
+          },
+          {
+            "Bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated list of audit log entries"
+          },
+          "401": {
+            "description": "Unauthenticated"
+          },
+          "405": {
+            "description": "Method not allowed"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "audit_log_partial_update",
+        "description": "List audit log entries with filtering. Read-only endpoint.",
+        "summary": "List audit log entries",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "action",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by action"
+          },
+          {
+            "in": "query",
+            "name": "date_from",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by date from (YYYY-MM-DD)"
+          },
+          {
+            "in": "query",
+            "name": "date_to",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by date to (YYYY-MM-DD)"
+          },
+          {
+            "in": "query",
+            "name": "entity_id",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by entity ID"
+          },
+          {
+            "in": "query",
+            "name": "entity_type",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by entity type"
+          },
+          {
+            "in": "query",
+            "name": "search",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Search in summary"
+          }
+        ],
+        "tags": [
+          "system"
+        ],
+        "security": [
+          {
+            "jwtAuth": []
+          },
+          {
+            "Bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated list of audit log entries"
+          },
+          "401": {
+            "description": "Unauthenticated"
+          },
+          "405": {
+            "description": "Method not allowed"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "audit_log_destroy",
+        "description": "List audit log entries with filtering. Read-only endpoint.",
+        "summary": "List audit log entries",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "action",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by action"
+          },
+          {
+            "in": "query",
+            "name": "date_from",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by date from (YYYY-MM-DD)"
+          },
+          {
+            "in": "query",
+            "name": "date_to",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by date to (YYYY-MM-DD)"
+          },
+          {
+            "in": "query",
+            "name": "entity_id",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by entity ID"
+          },
+          {
+            "in": "query",
+            "name": "entity_type",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by entity type"
+          },
+          {
+            "in": "query",
+            "name": "search",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Search in summary"
+          }
+        ],
+        "tags": [
+          "system"
+        ],
+        "security": [
+          {
+            "jwtAuth": []
+          },
+          {
+            "Bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated list of audit log entries"
+          },
+          "401": {
+            "description": "Unauthenticated"
+          },
+          "405": {
+            "description": "Method not allowed"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/change-password/": {
+      "post": {
+        "operationId": "auth_change_password_create",
+        "description": "Change owner password. Requires old password, invalidates all refresh tokens.",
+        "summary": "Change password",
+        "tags": [
+          "auth"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePasswordRequestRequest"
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePasswordRequestRequest"
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePasswordRequestRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "security": [
+          {
+            "jwtAuth": []
+          },
+          {
+            "Bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChangePasswordResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "description": "Validation error or incorrect old password"
+          },
+          "401": {
+            "description": "Unauthenticated"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/login/": {
+      "post": {
+        "operationId": "auth_login_create",
+        "description": "Authenticate owner with username and password. Returns access token in body and sets refresh token as httpOnly cookie.",
+        "summary": "Owner login",
+        "tags": [
+          "auth"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "username": {
+                    "type": "string"
+                  },
+                  "password": {
+                    "type": "string",
+                    "format": "password"
+                  }
+                },
+                "required": [
+                  "username",
+                  "password"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "401": {
+            "description": "Authentication failed - generic error for wrong password, lockout, or nonexistent user"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/logout/": {
+      "post": {
+        "operationId": "auth_logout_create",
+        "description": "Blacklist refresh token and clear cookie.",
+        "summary": "Logout",
+        "tags": [
+          "auth"
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LogoutResponse"
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/v1/auth/me/": {
+      "get": {
+        "operationId": "auth_me_retrieve",
+        "description": "Returns the username of the authenticated owner.",
+        "summary": "Get current user",
+        "tags": [
+          "auth"
+        ],
+        "security": [
+          {
+            "jwtAuth": []
+          },
+          {
+            "Bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "description": "Unauthenticated"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/refresh/": {
+      "post": {
+        "operationId": "auth_refresh_create",
+        "description": "Rotate refresh token. Requires refresh_token cookie and X-Requested-With: XMLHttpRequest header. Returns new access token and rotates refresh cookie.",
+        "summary": "Refresh access token",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Requested-With",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "XMLHttpRequest"
+              ]
+            },
+            "description": "CSRF protection header",
+            "required": true
+          }
+        ],
+        "tags": [
+          "auth"
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RefreshResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "description": "Refresh token in body not allowed"
+          },
+          "401": {
+            "description": "Invalid or expired refresh token"
+          },
+          "403": {
+            "description": "Missing X-Requested-With header"
+          }
+        }
+      }
+    },
+    "/api/v1/companies/": {
+      "get": {
+        "operationId": "companiesList",
+        "description": "Paginated list of companies. Filters: is_active, is_local. Search: name, gstin, phone. Ordering: name, created_at (default name).",
+        "summary": "List companies",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "is_active",
+            "schema": {
+              "type": "boolean"
+            },
+            "description": "Filter by active flag"
+          },
+          {
+            "in": "query",
+            "name": "is_local",
+            "schema": {
+              "type": "boolean"
+            },
+            "description": "Filter by local/unbranded flag"
+          },
+          {
+            "in": "query",
+            "name": "ordering",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Ordering field: name, created_at (prefix with '-' for descending)"
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Page number"
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Page size (max 100)"
+          },
+          {
+            "in": "query",
+            "name": "search",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Search in name, GSTIN and phone"
+          }
+        ],
+        "tags": [
+          "catalog"
+        ],
+        "security": [
+          {
+            "jwtAuth": []
+          },
+          {
+            "Bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedCompanyList"
+                }
+              }
+            },
+            "description": "Paginated list of companies"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "401": {
+            "description": "Unauthenticated"
+          }
+        }
+      },
+      "post": {
+        "operationId": "companiesCreate",
+        "description": "Create a new company. Name is unique case-insensitively.",
+        "summary": "Create company",
+        "tags": [
+          "catalog"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompanyRequest"
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/CompanyRequest"
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/CompanyRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "security": [
+          {
+            "jwtAuth": []
+          },
+          {
+            "Bearer": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Company"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "description": "Validation error - duplicate name or invalid fields"
+          },
+          "401": {
+            "description": "Unauthenticated"
+          }
+        }
+      }
+    },
+    "/api/v1/companies/{id}/": {
+      "get": {
+        "operationId": "companiesRetrieve",
+        "description": "GET/PUT/PATCH/DELETE /api/v1/companies/{id}/.",
+        "summary": "Get company",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "schema": {
+              "type": "integer"
+            },
+            "required": true
+          }
+        ],
+        "tags": [
+          "catalog"
+        ],
+        "security": [
+          {
+            "jwtAuth": []
+          },
+          {
+            "Bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Company"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "description": "Unauthenticated"
+          },
+          "404": {
+            "description": "Company not found"
+          }
+        }
+      },
+      "put": {
+        "operationId": "companiesUpdate",
+        "description": "Full update. Name is required.",
+        "summary": "Update company",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "schema": {
+              "type": "integer"
+            },
+            "required": true
+          }
+        ],
+        "tags": [
+          "catalog"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompanyRequest"
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/CompanyRequest"
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/CompanyRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "security": [
+          {
+            "jwtAuth": []
+          },
+          {
+            "Bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Company"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "401": {
+            "description": "Unauthenticated"
+          },
+          "404": {
+            "description": "Company not found"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "companiesPartialUpdate",
+        "description": "GET/PUT/PATCH/DELETE /api/v1/companies/{id}/.",
+        "summary": "Partially update company",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "schema": {
+              "type": "integer"
+            },
+            "required": true
+          }
+        ],
+        "tags": [
+          "catalog"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PatchedCompanyRequest"
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/PatchedCompanyRequest"
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/PatchedCompanyRequest"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "jwtAuth": []
+          },
+          {
+            "Bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Company"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "401": {
+            "description": "Unauthenticated"
+          },
+          "404": {
+            "description": "Company not found"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "companiesDestroy",
+        "description": "Companies are deactivated, never deleted. Use /deactivate/ instead.",
+        "summary": "Delete company (not allowed)",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "schema": {
+              "type": "integer"
+            },
+            "required": true
+          }
+        ],
+        "tags": [
+          "catalog"
+        ],
+        "security": [
+          {
+            "jwtAuth": []
+          },
+          {
+            "Bearer": []
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthenticated"
+          },
+          "404": {
+            "description": "Company not found"
+          },
+          "405": {
+            "description": "Method not allowed"
+          }
+        }
+      }
+    },
+    "/api/v1/companies/{id}/activate/": {
+      "post": {
+        "operationId": "companiesActivate",
+        "description": "Activate a company. Repeating on an already active company returns the current state without error.",
+        "summary": "Activate company",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "schema": {
+              "type": "integer"
+            },
+            "required": true
+          }
+        ],
+        "tags": [
+          "catalog"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompanyRequest"
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/CompanyRequest"
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/CompanyRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "security": [
+          {
+            "jwtAuth": []
+          },
+          {
+            "Bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Company"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "description": "Unauthenticated"
+          },
+          "404": {
+            "description": "Company not found"
+          }
+        }
+      }
+    },
+    "/api/v1/companies/{id}/deactivate/": {
+      "post": {
+        "operationId": "companiesDeactivate",
+        "description": "Deactivate a company. Repeating on an already inactive company returns the current state without error.",
+        "summary": "Deactivate company",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "schema": {
+              "type": "integer"
+            },
+            "required": true
+          }
+        ],
+        "tags": [
+          "catalog"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompanyRequest"
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/CompanyRequest"
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/CompanyRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "security": [
+          {
+            "jwtAuth": []
+          },
+          {
+            "Bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Company"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "description": "Unauthenticated"
+          },
+          "404": {
+            "description": "Company not found"
+          }
+        }
+      }
+    },
+    "/api/v1/health/": {
+      "get": {
+        "operationId": "health_retrieve",
+        "description": "Returns OK status. No authentication required.",
+        "summary": "Health check",
+        "tags": [
+          "system"
+        ],
+        "responses": {
+          "200": {
+            "description": "Health status"
+          }
+        }
+      }
+    },
+    "/api/v1/settings/": {
+      "get": {
+        "operationId": "settings_retrieve",
+        "description": "Get the single row of app settings.",
+        "summary": "Get settings",
+        "tags": [
+          "settings"
+        ],
+        "security": [
+          {
+            "jwtAuth": []
+          },
+          {
+            "Bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppSettings"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "description": "Unauthenticated"
+          }
+        }
+      },
+      "put": {
+        "operationId": "settings_update",
+        "description": "Partially update app settings. Only provided fields are updated.",
+        "summary": "Update settings",
+        "tags": [
+          "settings"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AppSettingsRequest"
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/AppSettingsRequest"
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/AppSettingsRequest"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "jwtAuth": []
+          },
+          {
+            "Bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppSettings"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "401": {
+            "description": "Unauthenticated"
+          }
+        }
+      }
+    },
+    "/api/v1/settings/gst-rates/": {
+      "get": {
+        "operationId": "settings_gst_rates_retrieve",
+        "description": "List all approved GST rates.",
+        "summary": "List GST rates",
+        "tags": [
+          "settings"
+        ],
+        "security": [
+          {
+            "jwtAuth": []
+          },
+          {
+            "Bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated list of GST rates"
+          },
+          "401": {
+            "description": "Unauthenticated"
+          }
+        }
+      },
+      "post": {
+        "operationId": "settings_gst_rates_create",
+        "description": "Create a new approved GST rate. Rate value is immutable once created.",
+        "summary": "Create GST rate",
+        "tags": [
+          "settings"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GstRateCreateRequest"
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/GstRateCreateRequest"
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/GstRateCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "security": [
+          {
+            "jwtAuth": []
+          },
+          {
+            "Bearer": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GstRateCreate"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "description": "Validation error - duplicate rate or invalid value"
+          },
+          "401": {
+            "description": "Unauthenticated"
+          }
+        }
+      }
+    },
+    "/api/v1/settings/gst-rates/{id}/": {
+      "put": {
+        "operationId": "settings_gst_rates_update",
+        "description": "Update label or is_active of a GST rate. Rate value cannot be changed.",
+        "summary": "Update GST rate",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "schema": {
+              "type": "integer"
+            },
+            "required": true
+          }
+        ],
+        "tags": [
+          "settings"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GstRateRequest"
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/GstRateRequest"
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/GstRateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "security": [
+          {
+            "jwtAuth": []
+          },
+          {
+            "Bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GstRate"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "description": "Validation error - rate value cannot be changed"
+          },
+          "401": {
+            "description": "Unauthenticated"
+          },
+          "404": {
+            "description": "GST rate not found"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AppSettings": {
+        "type": "object",
+        "description": "Serializer for AppSettings - single row settings.",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "readOnly": true
+          },
+          "shop_name": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 200
+          },
+          "logo_url": {
+            "type": "string",
+            "format": "uri",
+            "nullable": true,
+            "maxLength": 200
+          },
+          "address": {
+            "type": "string",
+            "nullable": true
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 20
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "nullable": true,
+            "maxLength": 254
+          },
+          "gstin": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 15
+          },
+          "state": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 100
+          },
+          "state_code": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 2
+          },
+          "invoice_prefix": {
+            "type": "string",
+            "maxLength": 10
+          },
+          "series_start_number": {
+            "type": "integer",
+            "maximum": 2147483647,
+            "minimum": 0
+          },
+          "invoice_footer": {
+            "type": "string",
+            "nullable": true
+          },
+          "terms_text": {
+            "type": "string",
+            "nullable": true
+          },
+          "prices_include_gst": {
+            "type": "boolean"
+          },
+          "default_manual_line_gst_rate": {
+            "type": "string",
+            "format": "decimal",
+            "pattern": "^-?\\d{0,3}(?:\\.\\d{0,2})?$",
+            "nullable": true
+          },
+          "purchase_gst_recoverable_default": {
+            "type": "boolean"
+          },
+          "commission_default_percent": {
+            "type": "string",
+            "format": "decimal",
+            "pattern": "^-?\\d{0,3}(?:\\.\\d{0,2})?$"
+          },
+          "commission_override_allowed": {
+            "type": "boolean"
+          },
+          "allow_negative_stock": {
+            "type": "boolean"
+          },
+          "allow_future_invoice_dates": {
+            "type": "boolean"
+          },
+          "block_prior_fy_backdating": {
+            "type": "boolean"
+          },
+          "financial_year_start_month": {
+            "type": "integer",
+            "maximum": 32767,
+            "minimum": 0
+          },
+          "salary_basis": {
+            "$ref": "#/components/schemas/SalaryBasisEnum"
+          },
+          "attendance_weights": {
+            "description": "JSON mapping of attendance status to day weight"
+          },
+          "overdue_days": {
+            "type": "integer",
+            "maximum": 2147483647,
+            "minimum": 0
+          },
+          "discount_warn_percent": {
+            "type": "string",
+            "format": "decimal",
+            "pattern": "^-?\\d{0,3}(?:\\.\\d{0,2})?$"
+          },
+          "idle_logout_minutes": {
+            "type": "integer",
+            "maximum": 2147483647,
+            "minimum": 0
+          },
+          "print_format": {
+            "$ref": "#/components/schemas/PrintFormatEnum"
+          },
+          "theme": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 50
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "AppSettingsRequest": {
+        "type": "object",
+        "description": "Serializer for AppSettings - single row settings.",
+        "properties": {
+          "shop_name": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 200
+          },
+          "logo_url": {
+            "type": "string",
+            "format": "uri",
+            "nullable": true,
+            "maxLength": 200
+          },
+          "address": {
+            "type": "string",
+            "nullable": true
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 20
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "nullable": true,
+            "maxLength": 254
+          },
+          "gstin": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 15
+          },
+          "state": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 100
+          },
+          "state_code": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 2
+          },
+          "invoice_prefix": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 10
+          },
+          "series_start_number": {
+            "type": "integer",
+            "maximum": 2147483647,
+            "minimum": 0
+          },
+          "invoice_footer": {
+            "type": "string",
+            "nullable": true
+          },
+          "terms_text": {
+            "type": "string",
+            "nullable": true
+          },
+          "prices_include_gst": {
+            "type": "boolean"
+          },
+          "default_manual_line_gst_rate": {
+            "type": "string",
+            "format": "decimal",
+            "pattern": "^-?\\d{0,3}(?:\\.\\d{0,2})?$",
+            "nullable": true
+          },
+          "purchase_gst_recoverable_default": {
+            "type": "boolean"
+          },
+          "commission_default_percent": {
+            "type": "string",
+            "format": "decimal",
+            "pattern": "^-?\\d{0,3}(?:\\.\\d{0,2})?$"
+          },
+          "commission_override_allowed": {
+            "type": "boolean"
+          },
+          "allow_negative_stock": {
+            "type": "boolean"
+          },
+          "allow_future_invoice_dates": {
+            "type": "boolean"
+          },
+          "block_prior_fy_backdating": {
+            "type": "boolean"
+          },
+          "financial_year_start_month": {
+            "type": "integer",
+            "maximum": 32767,
+            "minimum": 0
+          },
+          "salary_basis": {
+            "$ref": "#/components/schemas/SalaryBasisEnum"
+          },
+          "attendance_weights": {
+            "description": "JSON mapping of attendance status to day weight"
+          },
+          "overdue_days": {
+            "type": "integer",
+            "maximum": 2147483647,
+            "minimum": 0
+          },
+          "discount_warn_percent": {
+            "type": "string",
+            "format": "decimal",
+            "pattern": "^-?\\d{0,3}(?:\\.\\d{0,2})?$"
+          },
+          "idle_logout_minutes": {
+            "type": "integer",
+            "maximum": 2147483647,
+            "minimum": 0
+          },
+          "print_format": {
+            "$ref": "#/components/schemas/PrintFormatEnum"
+          },
+          "theme": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 50
+          }
+        }
+      },
+      "ChangePasswordRequestRequest": {
+        "type": "object",
+        "description": "Serializer for change-password request.",
+        "properties": {
+          "old_password": {
+            "type": "string",
+            "writeOnly": true,
+            "minLength": 1
+          },
+          "new_password": {
+            "type": "string",
+            "writeOnly": true,
+            "minLength": 1
+          }
+        },
+        "required": [
+          "new_password",
+          "old_password"
+        ]
+      },
+      "ChangePasswordResponse": {
+        "type": "object",
+        "description": "Serializer for change-password response.",
+        "properties": {
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "message"
+        ]
+      },
+      "Company": {
+        "type": "object",
+        "description": "Serializer for Company - create and update.",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "readOnly": true
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 20
+          },
+          "address": {
+            "type": "string",
+            "nullable": true
+          },
+          "gstin": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 15
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true
+          },
+          "is_local": {
+            "type": "boolean"
+          },
+          "is_active": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "readOnly": true
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "readOnly": true
+          }
+        },
+        "required": [
+          "created_at",
+          "id",
+          "name",
+          "updated_at"
+        ]
+      },
+      "CompanyRequest": {
+        "type": "object",
+        "description": "Serializer for Company - create and update.",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 20
+          },
+          "address": {
+            "type": "string",
+            "nullable": true
+          },
+          "gstin": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 15
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true
+          },
+          "is_local": {
+            "type": "boolean"
+          },
+          "is_active": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "GstRate": {
+        "type": "object",
+        "description": "Serializer for GstRate.",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "readOnly": true
+          },
+          "rate": {
+            "type": "string",
+            "format": "decimal",
+            "pattern": "^-?\\d{0,3}(?:\\.\\d{0,2})?$",
+            "readOnly": true
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "is_active": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "readOnly": true
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "readOnly": true
+          }
+        },
+        "required": [
+          "created_at",
+          "id",
+          "label",
+          "rate",
+          "updated_at"
+        ]
+      },
+      "GstRateCreate": {
+        "type": "object",
+        "description": "Serializer for creating GstRate - rate is writable on create.",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "readOnly": true
+          },
+          "rate": {
+            "type": "string",
+            "format": "decimal",
+            "pattern": "^-?\\d{0,3}(?:\\.\\d{0,2})?$"
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "is_active": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "readOnly": true
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "readOnly": true
+          }
+        },
+        "required": [
+          "created_at",
+          "id",
+          "label",
+          "rate",
+          "updated_at"
+        ]
+      },
+      "GstRateCreateRequest": {
+        "type": "object",
+        "description": "Serializer for creating GstRate - rate is writable on create.",
+        "properties": {
+          "rate": {
+            "type": "string",
+            "format": "decimal",
+            "pattern": "^-?\\d{0,3}(?:\\.\\d{0,2})?$"
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "is_active": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "label",
+          "rate"
+        ]
+      },
+      "GstRateRequest": {
+        "type": "object",
+        "description": "Serializer for GstRate.",
+        "properties": {
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "is_active": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "label"
+        ]
+      },
+      "LoginResponse": {
+        "type": "object",
+        "description": "Serializer for login response.",
+        "properties": {
+          "access": {
+            "type": "string"
+          },
+          "username": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "access",
+          "username"
+        ]
+      },
+      "LogoutResponse": {
+        "type": "object",
+        "description": "Serializer for logout response.",
+        "properties": {
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "message"
+        ]
+      },
+      "MeResponse": {
+        "type": "object",
+        "description": "Serializer for me response.",
+        "properties": {
+          "username": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "username"
+        ]
+      },
+      "PaginatedCompanyList": {
+        "type": "object",
+        "required": [
+          "count",
+          "results"
+        ],
+        "properties": {
+          "count": {
+            "type": "integer",
+            "example": 123
+          },
+          "next": {
+            "type": "string",
+            "nullable": true,
+            "format": "uri",
+            "example": "http://api.example.org/accounts/?page=4"
+          },
+          "previous": {
+            "type": "string",
+            "nullable": true,
+            "format": "uri",
+            "example": "http://api.example.org/accounts/?page=2"
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Company"
+            }
+          }
+        }
+      },
+      "PatchedCompanyRequest": {
+        "type": "object",
+        "description": "Serializer for Company - create and update.",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 20
+          },
+          "address": {
+            "type": "string",
+            "nullable": true
+          },
+          "gstin": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 15
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true
+          },
+          "is_local": {
+            "type": "boolean"
+          },
+          "is_active": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PrintFormatEnum": {
+        "enum": [
+          "A4",
+          "THERMAL_80"
+        ],
+        "type": "string",
+        "description": "* `A4` - A4\n* `THERMAL_80` - Thermal 80mm"
+      },
+      "RefreshResponse": {
+        "type": "object",
+        "description": "Serializer for refresh response.",
+        "properties": {
+          "access": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "access"
+        ]
+      },
+      "SalaryBasisEnum": {
+        "enum": [
+          "CALENDAR_DAYS",
+          "FIXED_26",
+          "FIXED_30"
+        ],
+        "type": "string",
+        "description": "* `CALENDAR_DAYS` - Calendar Days\n* `FIXED_26` - Fixed 26 Days\n* `FIXED_30` - Fixed 30 Days"
+      }
+    },
+    "securitySchemes": {
+      "jwtAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "system",
+      "description": "System endpoints (health check)"
+    },
+    {
+      "name": "auth",
+      "description": "Authentication endpoints"
+    },
+    {
+      "name": "settings",
+      "description": "Settings and GST rates"
+    }
+  ]
+}

@@ -1164,11 +1164,17 @@ class TestCompanyService(TestCase):
     def test_create_writes_one_entry_with_all_seven_fields(self):
         user = _audit_user()
         request = _FakeRequest(user=user)
-        serializer = self._serializer(data={
-            "name": "Acme Paints", "phone": "+91 98765 43210",
-            "address": "1 Main St", "gstin": "06AAAPC0000Q1ZS",
-            "notes": "supplier", "is_local": True, "is_active": True,
-        })
+        serializer = self._serializer(
+            data={
+                "name": "Acme Paints",
+                "phone": "+91 98765 43210",
+                "address": "1 Main St",
+                "gstin": "06AAAPC0000Q1ZS",
+                "notes": "supplier",
+                "is_local": True,
+                "is_active": True,
+            }
+        )
         self.assertTrue(serializer.is_valid(), serializer.errors)
         before = AuditLog.objects.count()
         company = CompanyService.create_company(serializer, request)
@@ -1246,13 +1252,25 @@ class TestCompanyService(TestCase):
 
     # e. before and after of company.updated contain all seven fields.
     def test_updated_entry_contains_all_seven_fields(self):
-        company = Company.objects.create(name="Echo", phone="1111111111", address="1 St",
-                                         gstin="06AAAPC0000Q1ZS", notes="old", is_local=False, is_active=True)
+        company = Company.objects.create(
+            name="Echo",
+            phone="1111111111",
+            address="1 St",
+            gstin="06AAAPC0000Q1ZS",
+            notes="old",
+            is_local=False,
+            is_active=True,
+        )
         user = _audit_user()
         request = _FakeRequest(user=user)
         payload = {
-            "name": "Echo", "phone": "2222222222", "address": "2 St",
-            "gstin": "27AAPFU0939R1ZB", "notes": "new", "is_local": True, "is_active": False,
+            "name": "Echo",
+            "phone": "2222222222",
+            "address": "2 St",
+            "gstin": "27AAPFU0939R1ZB",
+            "notes": "new",
+            "is_local": True,
+            "is_active": False,
         }
         serializer = self._serializer(company, data=payload)
         self.assertTrue(serializer.is_valid(), serializer.errors)
@@ -1269,7 +1287,9 @@ class TestCompanyService(TestCase):
         request = _FakeRequest(user=user)
         before_count = AuditLog.objects.filter(action="company.deactivated").count()
         CompanyService.deactivate_company(company, request)
-        self.assertEqual(AuditLog.objects.filter(action="company.deactivated").count(), before_count + 1)
+        self.assertEqual(
+            AuditLog.objects.filter(action="company.deactivated").count(), before_count + 1
+        )
         entry = AuditLog.objects.filter(action="company.deactivated").order_by("-id").first()
         self.assertEqual(entry.before_json, {"is_active": True})
         self.assertEqual(entry.after_json, {"is_active": False})
@@ -1283,7 +1303,9 @@ class TestCompanyService(TestCase):
         request = _FakeRequest(user=user)
         before_count = AuditLog.objects.filter(action="company.deactivated").count()
         result = CompanyService.deactivate_company(company, request)
-        self.assertEqual(AuditLog.objects.filter(action="company.deactivated").count(), before_count)
+        self.assertEqual(
+            AuditLog.objects.filter(action="company.deactivated").count(), before_count
+        )
         self.assertIs(result, company)
         self.assertFalse(result.is_active)
 
@@ -1294,7 +1316,9 @@ class TestCompanyService(TestCase):
         request = _FakeRequest(user=user)
         before_count = AuditLog.objects.filter(action="company.activated").count()
         CompanyService.activate_company(company, request)
-        self.assertEqual(AuditLog.objects.filter(action="company.activated").count(), before_count + 1)
+        self.assertEqual(
+            AuditLog.objects.filter(action="company.activated").count(), before_count + 1
+        )
         entry = AuditLog.objects.filter(action="company.activated").order_by("-id").first()
         self.assertEqual(entry.before_json, {"is_active": False})
         self.assertEqual(entry.after_json, {"is_active": True})
@@ -1317,6 +1341,7 @@ class TestCompanyService(TestCase):
         user = _audit_user()
         request = _FakeRequest(user=user)
         from django.db import transaction
+
         try:
             with transaction.atomic():
                 CompanyService.deactivate_company(company, request)
@@ -1351,6 +1376,7 @@ class TestProductActivateDeactivateNoAudit(TestCase):
 
     def test_deactivate_product_flips_only_is_active_no_audit(self):
         from apps.catalog.services import deactivate_product
+
         product = Product.objects.create(
             product_code="Z-1",
             company=Company.objects.create(name="Milo"),
@@ -1366,6 +1392,7 @@ class TestProductActivateDeactivateNoAudit(TestCase):
 
     def test_activate_product_flips_only_is_active_no_audit(self):
         from apps.catalog.services import activate_product
+
         product = Product.objects.create(
             product_code="Z-2",
             company=Company.objects.create(name="Nilo"),

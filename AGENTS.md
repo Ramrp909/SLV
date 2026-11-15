@@ -37,6 +37,7 @@ Single-owner paint and hardware shop: inventory, GST invoicing, customers and du
 3. Run `make test` (or the command in the task). **Do not say a task is done while any test fails.** Never weaken or delete a test to make it pass; explain if a test is wrong.
 4. Reply with: files created or changed, commands run with results, anything left undone, any blueprint conflict found.
 5. Keep changes inside the task scope; no unrelated refactoring.
+6. Never rewrite or 'restore' an existing file from memory. Before changing a file, read it; change only what the task needs. At the end of every task run git --no-pager diff --stat and report any file outside the task's folder. A large number of deleted lines in a file you did not mean to change is a mistake to undo, not to explain. Use git --no-pager for all git commands.
 
 ## Safety
 - Use **fake sample data only**. Never put real customer, supplier, price or business data into prompts or fixtures.

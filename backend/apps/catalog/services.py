@@ -1,5 +1,6 @@
 """Services for catalog app: Company write operations with audit."""
 
+from apps.catalog.models import Product
 from apps.core.services import AuditService
 
 
@@ -94,3 +95,17 @@ class CompanyService:
                 actor=cls._actor(request),
             )
         return instance
+
+
+def deactivate_product(product: Product) -> Product:
+    """Deactivate a product (flip is_active). Products are never deleted."""
+    product.is_active = False
+    product.save(update_fields=["is_active", "updated_at"])
+    return product
+
+
+def activate_product(product: Product) -> Product:
+    """Activate a product (flip is_active)."""
+    product.is_active = True
+    product.save(update_fields=["is_active", "updated_at"])
+    return product

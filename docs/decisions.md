@@ -29,3 +29,6 @@ Record every approved change to the blueprint here (date, section, decision, rea
 - 2026-11-14: Product search matches every term against product_code, labels and company name; wildcard characters match literally (Django icontains escapes them, regression-tested); trigram indexes on UPPER(column) created by migration 0004 and proven usable by EXPLAIN tests.
 - 2026-11-14: pg_trgm is created with IF NOT EXISTS and is required (docs/deployment-notes.md); migration reverse drops only its indexes, never the extension.
 - 2026-11-14: catalog.urls is mounted at api/v1/ with internal companies/ and products/ prefixes (company URLs unchanged).
+
+- 2026-11-15: T-204 catalog endpoints are read-only; readiness reasons (selling_price, gst_rate, gst_rate_inactive, hsn_code) come from one source shared with the model; summary reason counts overlap by design.
+- 2026-11-15: Company product_count counts ACTIVE products only; inactive products are counted separately.

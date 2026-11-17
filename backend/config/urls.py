@@ -35,6 +35,7 @@ handler500 = api_500_view
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+    path("api/v1/catalog/", include("apps.catalog.catalog_urls")),
     path("api/v1/", include("apps.core.urls")),
     path("api/v1/auth/", include("apps.accounts.urls")),
     path("api/v1/", include("apps.catalog.urls")),

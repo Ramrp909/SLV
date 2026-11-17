@@ -599,6 +599,336 @@
         }
       }
     },
+    "/api/v1/catalog/companies/": {
+      "get": {
+        "operationId": "catalogCompaniesList",
+        "description": "One aggregated query computes product_count, inactive_product_count, billing_ready_count and not_billing_ready_count per company.",
+        "summary": "Companies with product readiness counts",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "include_inactive",
+            "schema": {
+              "type": "boolean"
+            },
+            "description": "Include inactive companies (default false)."
+          },
+          {
+            "in": "query",
+            "name": "is_active",
+            "schema": {
+              "type": "boolean"
+            },
+            "description": "Filter by active flag (default true)."
+          },
+          {
+            "in": "query",
+            "name": "is_local",
+            "schema": {
+              "type": "boolean"
+            },
+            "description": "Filter by local/unbranded flag."
+          },
+          {
+            "in": "query",
+            "name": "ordering",
+            "schema": {
+              "type": "string"
+            },
+            "description": "name, product_count or not_billing_ready_count (prefix '-' for descending; default name)."
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Page number."
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Page size (max 100)."
+          },
+          {
+            "in": "query",
+            "name": "search",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Case-insensitive contains search on company name."
+          }
+        ],
+        "tags": [
+          "catalog"
+        ],
+        "security": [
+          {
+            "jwtAuth": []
+          },
+          {
+            "Bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedCompanyCountsList"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Validation error"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Unauthenticated"
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Method not allowed"
+          }
+        }
+      }
+    },
+    "/api/v1/catalog/readiness/": {
+      "get": {
+        "operationId": "catalogReadinessList",
+        "description": "Lists products missing selling price, GST rate, an active GST rate or an HSN code. include_inactive=true also lists inactive products.",
+        "summary": "Active products that are not billing ready",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "category",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Case-insensitive exact match on the stored category label."
+          },
+          {
+            "in": "query",
+            "name": "company",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Company id (exact). Unknown id yields an empty page."
+          },
+          {
+            "in": "query",
+            "name": "include_inactive",
+            "schema": {
+              "type": "boolean"
+            },
+            "description": "Include inactive products (default false)."
+          },
+          {
+            "in": "query",
+            "name": "missing",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Reason filter: selling_price, gst_rate, gst_rate_inactive or hsn_code."
+          },
+          {
+            "in": "query",
+            "name": "ordering",
+            "schema": {
+              "type": "string"
+            },
+            "description": "product_code (prefix '-' for descending; default product_code)."
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Page number."
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Page size (max 100)."
+          },
+          {
+            "in": "query",
+            "name": "product_type",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Case-insensitive exact match on the stored product type label."
+          },
+          {
+            "in": "query",
+            "name": "search",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Space-separated terms; every term must match product code, labels or company name."
+          }
+        ],
+        "tags": [
+          "catalog"
+        ],
+        "security": [
+          {
+            "jwtAuth": []
+          },
+          {
+            "Bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedReadinessItemList"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Validation error"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Unauthenticated"
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Method not allowed"
+          }
+        }
+      }
+    },
+    "/api/v1/catalog/readiness/summary/": {
+      "get": {
+        "operationId": "catalogReadinessSummary",
+        "description": "active_products, billing_ready and not_billing_ready counts, plus per-reason missing counts over active products. A product with several missing reasons is counted under each reason, so the reason counts add up to more than not_billing_ready by design.",
+        "summary": "Billing readiness summary over active products",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Page number (unused, kept for consistency)."
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Page size (unused, kept for consistency)."
+          }
+        ],
+        "tags": [
+          "catalog"
+        ],
+        "security": [
+          {
+            "jwtAuth": []
+          },
+          {
+            "Bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadinessSummary"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Validation error"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Unauthenticated"
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Method not allowed"
+          }
+        }
+      }
+    },
     "/api/v1/companies/": {
       "get": {
         "operationId": "companiesList",
@@ -2358,6 +2688,45 @@
           "updated_at"
         ]
       },
+      "CompanyCounts": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "is_local": {
+            "type": "boolean"
+          },
+          "is_active": {
+            "type": "boolean"
+          },
+          "product_count": {
+            "type": "integer"
+          },
+          "inactive_product_count": {
+            "type": "integer"
+          },
+          "billing_ready_count": {
+            "type": "integer"
+          },
+          "not_billing_ready_count": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "billing_ready_count",
+          "id",
+          "inactive_product_count",
+          "is_active",
+          "is_local",
+          "name",
+          "not_billing_ready_count",
+          "product_count"
+        ]
+      },
       "CompanyRequest": {
         "type": "object",
         "description": "Serializer for Company - create and update.",
@@ -2394,6 +2763,31 @@
         },
         "required": [
           "name"
+        ]
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "fields": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "required": [
+          "code",
+          "fields",
+          "message"
         ]
       },
       "GstRate": {
@@ -2568,6 +2962,37 @@
         "type": "string",
         "description": "* `LTR` - Litre\n* `ML` - Millilitre\n* `KG` - Kilogram\n* `G` - Gram\n* `PCS` - Piece\n* `SET` - Set\n* `MTR` - Metre"
       },
+      "PaginatedCompanyCountsList": {
+        "type": "object",
+        "required": [
+          "count",
+          "results"
+        ],
+        "properties": {
+          "count": {
+            "type": "integer",
+            "example": 123
+          },
+          "next": {
+            "type": "string",
+            "nullable": true,
+            "format": "uri",
+            "example": "http://api.example.org/accounts/?page=4"
+          },
+          "previous": {
+            "type": "string",
+            "nullable": true,
+            "format": "uri",
+            "example": "http://api.example.org/accounts/?page=2"
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CompanyCounts"
+            }
+          }
+        }
+      },
       "PaginatedCompanyList": {
         "type": "object",
         "required": [
@@ -2626,6 +3051,37 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/Product"
+            }
+          }
+        }
+      },
+      "PaginatedReadinessItemList": {
+        "type": "object",
+        "required": [
+          "count",
+          "results"
+        ],
+        "properties": {
+          "count": {
+            "type": "integer",
+            "example": 123
+          },
+          "next": {
+            "type": "string",
+            "nullable": true,
+            "format": "uri",
+            "example": "http://api.example.org/accounts/?page=4"
+          },
+          "previous": {
+            "type": "string",
+            "nullable": true,
+            "format": "uri",
+            "example": "http://api.example.org/accounts/?page=2"
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReadinessItem"
             }
           }
         }
@@ -3086,6 +3542,91 @@
           "pack_unit",
           "product_code",
           "product_type"
+        ]
+      },
+      "ReadinessItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "product_code": {
+            "type": "string"
+          },
+          "display_name": {
+            "type": "string",
+            "readOnly": true
+          },
+          "company_name": {
+            "type": "string"
+          },
+          "product_type": {
+            "type": "string",
+            "nullable": true
+          },
+          "sub_type": {
+            "type": "string",
+            "nullable": true
+          },
+          "sub_sub_type": {
+            "type": "string",
+            "nullable": true
+          },
+          "pack_size": {
+            "type": "string",
+            "format": "decimal",
+            "pattern": "^-?\\d{0,7}(?:\\.\\d{0,3})?$"
+          },
+          "pack_unit": {
+            "$ref": "#/components/schemas/PackUnitEnum"
+          },
+          "missing_for_billing": {
+            "type": "array",
+            "items": {},
+            "readOnly": true
+          },
+          "is_active": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "company_name",
+          "display_name",
+          "id",
+          "is_active",
+          "missing_for_billing",
+          "pack_size",
+          "pack_unit",
+          "product_code",
+          "product_type",
+          "sub_sub_type",
+          "sub_type"
+        ]
+      },
+      "ReadinessSummary": {
+        "type": "object",
+        "properties": {
+          "active_products": {
+            "type": "integer"
+          },
+          "billing_ready": {
+            "type": "integer"
+          },
+          "not_billing_ready": {
+            "type": "integer"
+          },
+          "missing": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer"
+            }
+          }
+        },
+        "required": [
+          "active_products",
+          "billing_ready",
+          "missing",
+          "not_billing_ready"
         ]
       },
       "RefreshResponse": {

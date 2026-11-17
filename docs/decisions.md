@@ -22,3 +22,10 @@ Record every approved change to the blueprint here (date, section, decision, rea
 - 2026-11-13: HSN format check: digits only, 2 to 8 digits (format only, no meaning).
 - 2026-11-13: Products are never deleted (instance and queryset delete blocked); deactivate instead.
 - 2026-11-13: CompanyService was damaged during T-202 and restored from the T-201 commit in T-202c; AGENTS.md now forbids rewriting files from memory and requires git --no-pager diff --stat at the end of each task.
+
+- 2026-11-14: T-203 Products API: stock fields in request bodies are rejected, never ignored; stock changes only through stock operations (T-301).
+- 2026-11-14: pack_size and pack_unit cannot change once a product has stock history (PACK_CHANGE_NOT_ALLOWED); has_stock_history is extended in T-301 to check movements.
+- 2026-11-14: Duplicate product code returns DUPLICATE_PRODUCT_CODE on the field product_code; unapproved GST rate returns GST_RATE_NOT_APPROVED on the field gst_rate.
+- 2026-11-14: Product search matches every term against product_code, labels and company name; wildcard characters match literally (Django icontains escapes them, regression-tested); trigram indexes on UPPER(column) created by migration 0004 and proven usable by EXPLAIN tests.
+- 2026-11-14: pg_trgm is created with IF NOT EXISTS and is required (docs/deployment-notes.md); migration reverse drops only its indexes, never the extension.
+- 2026-11-14: catalog.urls is mounted at api/v1/ with internal companies/ and products/ prefixes (company URLs unchanged).

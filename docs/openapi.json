@@ -1102,6 +1102,676 @@
         }
       }
     },
+    "/api/v1/products/": {
+      "get": {
+        "operationId": "productsList",
+        "description": "Paginated list of products. Filters: company, category, product_type, sub_type, sub_sub_type, pack_unit, is_active, track_stock, billing_ready, stock_status. Search: space-separated terms matched against code, type, sub-types, category and company.",
+        "summary": "List products",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "billing_ready",
+            "schema": {
+              "type": "boolean"
+            },
+            "description": "Filter by billing readiness."
+          },
+          {
+            "in": "query",
+            "name": "category",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Case-insensitive exact category."
+          },
+          {
+            "in": "query",
+            "name": "company",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Company id (exact)."
+          },
+          {
+            "in": "query",
+            "name": "is_active",
+            "schema": {
+              "type": "boolean"
+            },
+            "description": "Filter by active flag."
+          },
+          {
+            "in": "query",
+            "name": "ordering",
+            "schema": {
+              "type": "string"
+            },
+            "description": "product_code, product_type, sub_type, created_at, qty_on_hand, selling_price (prefix '-' for desc)."
+          },
+          {
+            "in": "query",
+            "name": "pack_unit",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Case-insensitive exact pack unit."
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Page number."
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Page size (max 100)."
+          },
+          {
+            "in": "query",
+            "name": "product_type",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Case-insensitive exact product type."
+          },
+          {
+            "in": "query",
+            "name": "search",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Space-separated terms; every term must match code, type, sub-types, category or company name."
+          },
+          {
+            "in": "query",
+            "name": "stock_status",
+            "schema": {
+              "type": "string"
+            },
+            "description": "in: qty_on_hand>0; low: 0<qty_on_hand<=min_stock with track_stock; out: track_stock and qty_on_hand<=0."
+          },
+          {
+            "in": "query",
+            "name": "sub_sub_type",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Case-insensitive exact sub-sub type."
+          },
+          {
+            "in": "query",
+            "name": "sub_type",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Case-insensitive exact sub type."
+          },
+          {
+            "in": "query",
+            "name": "track_stock",
+            "schema": {
+              "type": "boolean"
+            },
+            "description": "Filter by track_stock flag."
+          }
+        ],
+        "tags": [
+          "catalog"
+        ],
+        "security": [
+          {
+            "jwtAuth": []
+          },
+          {
+            "Bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedProductList"
+                }
+              }
+            },
+            "description": "Paginated product list"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "401": {
+            "description": "Unauthenticated"
+          }
+        }
+      },
+      "post": {
+        "operationId": "productsCreate",
+        "description": "Create a product. Only product_code, company, product_type, pack_size and pack_unit are required.",
+        "summary": "Create product",
+        "tags": [
+          "catalog"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductRequest"
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductRequest"
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "security": [
+          {
+            "jwtAuth": []
+          },
+          {
+            "Bearer": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Product"
+                }
+              }
+            },
+            "description": "Product created"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "401": {
+            "description": "Unauthenticated"
+          }
+        }
+      }
+    },
+    "/api/v1/products/{id}/": {
+      "get": {
+        "operationId": "productsRetrieve",
+        "description": "GET, PUT, PATCH /api/v1/products/{id}/. DELETE returns 405.",
+        "summary": "Get product",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "schema": {
+              "type": "integer"
+            },
+            "required": true
+          }
+        ],
+        "tags": [
+          "catalog"
+        ],
+        "security": [
+          {
+            "jwtAuth": []
+          },
+          {
+            "Bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Product"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "description": "Unauthenticated"
+          },
+          "404": {
+            "description": "Product not found"
+          }
+        }
+      },
+      "put": {
+        "operationId": "productsUpdate",
+        "description": "GET, PUT, PATCH /api/v1/products/{id}/. DELETE returns 405.",
+        "summary": "Update product (full)",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "schema": {
+              "type": "integer"
+            },
+            "required": true
+          }
+        ],
+        "tags": [
+          "catalog"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductRequest"
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductRequest"
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "security": [
+          {
+            "jwtAuth": []
+          },
+          {
+            "Bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Product"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "401": {
+            "description": "Unauthenticated"
+          },
+          "404": {
+            "description": "Product not found"
+          },
+          "405": {
+            "description": "Method not allowed"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "productsPartialUpdate",
+        "description": "GET, PUT, PATCH /api/v1/products/{id}/. DELETE returns 405.",
+        "summary": "Update product (partial)",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "schema": {
+              "type": "integer"
+            },
+            "required": true
+          }
+        ],
+        "tags": [
+          "catalog"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PatchedProductRequest"
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/PatchedProductRequest"
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/PatchedProductRequest"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "jwtAuth": []
+          },
+          {
+            "Bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Product"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "401": {
+            "description": "Unauthenticated"
+          },
+          "404": {
+            "description": "Product not found"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "productsDestroy",
+        "description": "GET, PUT, PATCH /api/v1/products/{id}/. DELETE returns 405.",
+        "summary": "Delete product (not allowed)",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "schema": {
+              "type": "integer"
+            },
+            "required": true
+          }
+        ],
+        "tags": [
+          "catalog"
+        ],
+        "security": [
+          {
+            "jwtAuth": []
+          },
+          {
+            "Bearer": []
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthenticated"
+          },
+          "404": {
+            "description": "Product not found"
+          },
+          "405": {
+            "description": "Method not allowed"
+          }
+        }
+      }
+    },
+    "/api/v1/products/{id}/activate/": {
+      "post": {
+        "operationId": "productsActivate",
+        "description": "POST /api/v1/products/{id}/activate/",
+        "summary": "Activate product",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "schema": {
+              "type": "integer"
+            },
+            "required": true
+          }
+        ],
+        "tags": [
+          "catalog"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductRequest"
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductRequest"
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "security": [
+          {
+            "jwtAuth": []
+          },
+          {
+            "Bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Product"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "description": "Unauthenticated"
+          },
+          "404": {
+            "description": "Product not found"
+          }
+        }
+      }
+    },
+    "/api/v1/products/{id}/deactivate/": {
+      "post": {
+        "operationId": "productsDeactivate",
+        "description": "POST /api/v1/products/{id}/deactivate/",
+        "summary": "Deactivate product",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "schema": {
+              "type": "integer"
+            },
+            "required": true
+          }
+        ],
+        "tags": [
+          "catalog"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductRequest"
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductRequest"
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "security": [
+          {
+            "jwtAuth": []
+          },
+          {
+            "Bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Product"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "description": "Unauthenticated"
+          },
+          "404": {
+            "description": "Product not found"
+          }
+        }
+      }
+    },
+    "/api/v1/products/lookup/": {
+      "get": {
+        "operationId": "productsLookup",
+        "description": "code: exact match after trimming and uppercasing. q: ranked text search (exact code, prefix, contains, label, company), active products only unless include_inactive=true.",
+        "summary": "Lookup a product by code or text",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "code",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Exact product code (trimmed, uppercased)."
+          },
+          {
+            "in": "query",
+            "name": "include_inactive",
+            "schema": {
+              "type": "boolean"
+            },
+            "description": "Include inactive products for q search (default false)."
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Free text search (max 15 results)."
+          }
+        ],
+        "tags": [
+          "catalog"
+        ],
+        "security": [
+          {
+            "jwtAuth": []
+          },
+          {
+            "Bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ProductCompact"
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "description": "Provide exactly one of code or q"
+          },
+          "401": {
+            "description": "Unauthenticated"
+          },
+          "404": {
+            "description": "Product not found (code lookup)"
+          }
+        }
+      }
+    },
+    "/api/v1/products/suggest/": {
+      "get": {
+        "operationId": "productsSuggest",
+        "description": "Distinct stored labels, case-insensitive contains, most-used first then alphabetical (max 20).",
+        "summary": "Suggest distinct labels for a product field",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "field",
+            "schema": {
+              "type": "string"
+            },
+            "description": "One of product_type, sub_type, sub_sub_type, category."
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Case-insensitive contains filter."
+          }
+        ],
+        "tags": [
+          "catalog"
+        ],
+        "security": [
+          {
+            "jwtAuth": []
+          },
+          {
+            "Bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of label strings"
+          },
+          "400": {
+            "description": "Invalid field"
+          },
+          "401": {
+            "description": "Unauthenticated"
+          }
+        }
+      }
+    },
     "/api/v1/settings/": {
       "get": {
         "operationId": "settings_retrieve",
@@ -1885,6 +2555,19 @@
           "username"
         ]
       },
+      "PackUnitEnum": {
+        "enum": [
+          "LTR",
+          "ML",
+          "KG",
+          "G",
+          "PCS",
+          "SET",
+          "MTR"
+        ],
+        "type": "string",
+        "description": "* `LTR` - Litre\n* `ML` - Millilitre\n* `KG` - Kilogram\n* `G` - Gram\n* `PCS` - Piece\n* `SET` - Set\n* `MTR` - Metre"
+      },
       "PaginatedCompanyList": {
         "type": "object",
         "required": [
@@ -1912,6 +2595,37 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/Company"
+            }
+          }
+        }
+      },
+      "PaginatedProductList": {
+        "type": "object",
+        "required": [
+          "count",
+          "results"
+        ],
+        "properties": {
+          "count": {
+            "type": "integer",
+            "example": 123
+          },
+          "next": {
+            "type": "string",
+            "nullable": true,
+            "format": "uri",
+            "example": "http://api.example.org/accounts/?page=4"
+          },
+          "previous": {
+            "type": "string",
+            "nullable": true,
+            "format": "uri",
+            "example": "http://api.example.org/accounts/?page=2"
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Product"
             }
           }
         }
@@ -1951,6 +2665,85 @@
           }
         }
       },
+      "PatchedProductRequest": {
+        "type": "object",
+        "description": "Serializer for Product - full representation used by create, update, list and detail.",
+        "properties": {
+          "product_code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40
+          },
+          "company": {
+            "type": "integer"
+          },
+          "category": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 200
+          },
+          "product_type": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "sub_type": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 200
+          },
+          "sub_sub_type": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 200
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "pack_size": {
+            "type": "string",
+            "format": "decimal",
+            "pattern": "^-?\\d{0,7}(?:\\.\\d{0,3})?$"
+          },
+          "pack_unit": {
+            "$ref": "#/components/schemas/PackUnitEnum"
+          },
+          "selling_price": {
+            "type": "string",
+            "format": "decimal",
+            "pattern": "^-?\\d{0,10}(?:\\.\\d{0,2})?$",
+            "nullable": true
+          },
+          "gst_rate": {
+            "type": "string",
+            "format": "decimal",
+            "pattern": "^-?\\d{0,3}(?:\\.\\d{0,2})?$",
+            "nullable": true
+          },
+          "hsn_code": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 8
+          },
+          "min_stock": {
+            "type": "string",
+            "format": "decimal",
+            "pattern": "^-?\\d{0,7}(?:\\.\\d{0,3})?$",
+            "nullable": true
+          },
+          "allow_fractional_qty": {
+            "type": "boolean"
+          },
+          "track_stock": {
+            "type": "boolean"
+          },
+          "custom_fields": {},
+          "is_active": {
+            "type": "boolean"
+          }
+        }
+      },
       "PrintFormatEnum": {
         "enum": [
           "A4",
@@ -1958,6 +2751,342 @@
         ],
         "type": "string",
         "description": "* `A4` - A4\n* `THERMAL_80` - Thermal 80mm"
+      },
+      "Product": {
+        "type": "object",
+        "description": "Serializer for Product - full representation used by create, update, list and detail.",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "readOnly": true
+          },
+          "product_code": {
+            "type": "string",
+            "maxLength": 40
+          },
+          "company": {
+            "type": "integer"
+          },
+          "company_name": {
+            "type": "string",
+            "readOnly": true
+          },
+          "display_name": {
+            "type": "string",
+            "readOnly": true
+          },
+          "category": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 200
+          },
+          "product_type": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "sub_type": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 200
+          },
+          "sub_sub_type": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 200
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "pack_size": {
+            "type": "string",
+            "format": "decimal",
+            "pattern": "^-?\\d{0,7}(?:\\.\\d{0,3})?$"
+          },
+          "pack_unit": {
+            "$ref": "#/components/schemas/PackUnitEnum"
+          },
+          "qty_on_hand": {
+            "type": "string",
+            "format": "decimal",
+            "pattern": "^-?\\d{0,7}(?:\\.\\d{0,3})?$",
+            "readOnly": true
+          },
+          "avg_buying_price": {
+            "type": "string",
+            "format": "decimal",
+            "pattern": "^-?\\d{0,10}(?:\\.\\d{0,4})?$",
+            "readOnly": true,
+            "nullable": true
+          },
+          "last_buying_price": {
+            "type": "string",
+            "format": "decimal",
+            "pattern": "^-?\\d{0,10}(?:\\.\\d{0,4})?$",
+            "readOnly": true,
+            "nullable": true
+          },
+          "selling_price": {
+            "type": "string",
+            "format": "decimal",
+            "pattern": "^-?\\d{0,10}(?:\\.\\d{0,2})?$",
+            "nullable": true
+          },
+          "gst_rate": {
+            "type": "string",
+            "format": "decimal",
+            "pattern": "^-?\\d{0,3}(?:\\.\\d{0,2})?$",
+            "nullable": true
+          },
+          "hsn_code": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 8
+          },
+          "min_stock": {
+            "type": "string",
+            "format": "decimal",
+            "pattern": "^-?\\d{0,7}(?:\\.\\d{0,3})?$",
+            "nullable": true
+          },
+          "allow_fractional_qty": {
+            "type": "boolean"
+          },
+          "track_stock": {
+            "type": "boolean"
+          },
+          "custom_fields": {},
+          "is_active": {
+            "type": "boolean"
+          },
+          "billing_ready": {
+            "type": "boolean",
+            "readOnly": true
+          },
+          "missing_for_billing": {
+            "type": "array",
+            "items": {},
+            "readOnly": true
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "readOnly": true
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "readOnly": true
+          }
+        },
+        "required": [
+          "avg_buying_price",
+          "billing_ready",
+          "company",
+          "company_name",
+          "created_at",
+          "display_name",
+          "id",
+          "last_buying_price",
+          "missing_for_billing",
+          "pack_size",
+          "pack_unit",
+          "product_code",
+          "product_type",
+          "qty_on_hand",
+          "updated_at"
+        ]
+      },
+      "ProductCompact": {
+        "type": "object",
+        "description": "Compact representation used by lookup and suggest endpoints.",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "readOnly": true
+          },
+          "product_code": {
+            "type": "string",
+            "readOnly": true
+          },
+          "display_name": {
+            "type": "string",
+            "readOnly": true
+          },
+          "company_name": {
+            "type": "string",
+            "readOnly": true
+          },
+          "product_type": {
+            "type": "string",
+            "readOnly": true
+          },
+          "sub_type": {
+            "type": "string",
+            "readOnly": true,
+            "nullable": true
+          },
+          "sub_sub_type": {
+            "type": "string",
+            "readOnly": true,
+            "nullable": true
+          },
+          "pack_size": {
+            "type": "string",
+            "format": "decimal",
+            "pattern": "^-?\\d{0,7}(?:\\.\\d{0,3})?$",
+            "readOnly": true
+          },
+          "pack_unit": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PackUnitEnum"
+              }
+            ],
+            "readOnly": true
+          },
+          "qty_on_hand": {
+            "type": "string",
+            "format": "decimal",
+            "pattern": "^-?\\d{0,7}(?:\\.\\d{0,3})?$",
+            "readOnly": true
+          },
+          "selling_price": {
+            "type": "string",
+            "format": "decimal",
+            "pattern": "^-?\\d{0,10}(?:\\.\\d{0,2})?$",
+            "readOnly": true,
+            "nullable": true
+          },
+          "gst_rate": {
+            "type": "string",
+            "format": "decimal",
+            "pattern": "^-?\\d{0,3}(?:\\.\\d{0,2})?$",
+            "readOnly": true,
+            "nullable": true
+          },
+          "hsn_code": {
+            "type": "string",
+            "readOnly": true,
+            "nullable": true
+          },
+          "track_stock": {
+            "type": "boolean",
+            "readOnly": true
+          },
+          "is_active": {
+            "type": "boolean",
+            "readOnly": true
+          },
+          "billing_ready": {
+            "type": "boolean",
+            "readOnly": true
+          }
+        },
+        "required": [
+          "billing_ready",
+          "company_name",
+          "display_name",
+          "gst_rate",
+          "hsn_code",
+          "id",
+          "is_active",
+          "pack_size",
+          "pack_unit",
+          "product_code",
+          "product_type",
+          "qty_on_hand",
+          "selling_price",
+          "sub_sub_type",
+          "sub_type",
+          "track_stock"
+        ]
+      },
+      "ProductRequest": {
+        "type": "object",
+        "description": "Serializer for Product - full representation used by create, update, list and detail.",
+        "properties": {
+          "product_code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40
+          },
+          "company": {
+            "type": "integer"
+          },
+          "category": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 200
+          },
+          "product_type": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "sub_type": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 200
+          },
+          "sub_sub_type": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 200
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "pack_size": {
+            "type": "string",
+            "format": "decimal",
+            "pattern": "^-?\\d{0,7}(?:\\.\\d{0,3})?$"
+          },
+          "pack_unit": {
+            "$ref": "#/components/schemas/PackUnitEnum"
+          },
+          "selling_price": {
+            "type": "string",
+            "format": "decimal",
+            "pattern": "^-?\\d{0,10}(?:\\.\\d{0,2})?$",
+            "nullable": true
+          },
+          "gst_rate": {
+            "type": "string",
+            "format": "decimal",
+            "pattern": "^-?\\d{0,3}(?:\\.\\d{0,2})?$",
+            "nullable": true
+          },
+          "hsn_code": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 8
+          },
+          "min_stock": {
+            "type": "string",
+            "format": "decimal",
+            "pattern": "^-?\\d{0,7}(?:\\.\\d{0,3})?$",
+            "nullable": true
+          },
+          "allow_fractional_qty": {
+            "type": "boolean"
+          },
+          "track_stock": {
+            "type": "boolean"
+          },
+          "custom_fields": {},
+          "is_active": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "company",
+          "pack_size",
+          "pack_unit",
+          "product_code",
+          "product_type"
+        ]
       },
       "RefreshResponse": {
         "type": "object",

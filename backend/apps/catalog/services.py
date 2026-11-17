@@ -1,5 +1,7 @@
 """Services for catalog app: Company write operations with audit."""
 
+from django.db import transaction
+
 from apps.catalog.models import Product
 from apps.core.services import AuditService
 
@@ -109,3 +111,146 @@ def activate_product(product: Product) -> Product:
     product.is_active = True
     product.save(update_fields=["is_active", "updated_at"])
     return product
+
+
+class PackChangeNotAllowedError(Exception):
+    """Raised when pack_size / pack_unit cannot be changed due to stock history."""
+
+    def __init__(self, field: str):
+        self.field = field
+        super().__init__(f"Pack {field} cannot be changed once the product has stock history.")
+
+
+PRODUCT_AUDIT_FIELDS = [
+    "product_code",
+    "company",
+    "category",
+    "product_type",
+    "sub_type",
+    "sub_sub_type",
+    "description",
+    "pack_size",
+    "pack_unit",
+    "qty_on_hand",
+    "avg_buying_price",
+    "last_buying_price",
+    "selling_price",
+    "gst_rate",
+    "hsn_code",
+    "min_stock",
+    "allow_fractional_qty",
+    "track_stock",
+    "custom_fields",
+    "is_active",
+]
+
+
+def has_stock_history(product: Product) -> bool:
+    """T-203: stock history exists when any stock field has been touched.
+
+    T-301 will extend this to consult stock_movements.
+    """
+    return (
+        product.qty_on_hand != 0
+        or product.avg_buying_price is not None
+        or product.last_buying_price is not None
+    )
+
+
+def _actor(request):
+    return getattr(request, "user", None) if request else None
+
+
+def _product_snapshot(instance: Product) -> dict:
+    data = {}
+    for field in PRODUCT_AUDIT_FIELDS:
+        if field == "company":
+            data["company"] = getattr(instance, "company_id", None)
+        else:
+            data[field] = getattr(instance, field)
+    return data
+
+
+def create_product_with_audit(serializer, request):
+    """Create a product and record product.created audit entry in the same transaction."""
+    with transaction.atomic():
+        instance = serializer.save()
+        instance.full_clean()
+        after = _product_snapshot(instance)
+        AuditService.record(
+            action="product.created",
+            entity_type="Product",
+            entity_id=str(instance.pk),
+            summary=f"Product created: {instance.product_code}",
+            before=None,
+            after=after,
+            request=request,
+            actor=_actor(request),
+        )
+    return instance
+
+
+def update_product_with_audit(instance, serializer, request):
+    """Update a product; record product.updated only if something changed."""
+    validated_data = serializer.validated_data or {}
+    if not validated_data:
+        return serializer.save()
+
+    before = _product_snapshot(instance)
+    with transaction.atomic():
+        instance = serializer.save()
+        instance.full_clean()
+        after = _product_snapshot(instance)
+        if before == after:
+            return instance
+        AuditService.record(
+            action="product.updated",
+            entity_type="Product",
+            entity_id=str(instance.pk),
+            summary=f"Product updated: {instance.product_code}",
+            before=before,
+            after=after,
+            request=request,
+            actor=_actor(request),
+        )
+    return instance
+
+
+def set_product_active_with_audit(product: Product, is_active: bool, request):
+    """Activate or deactivate a product; no-op repeats write no audit entry."""
+    if product.is_active == is_active:
+        return product
+
+    before = _product_snapshot(product)
+    with transaction.atomic():
+        product.is_active = is_active
+        product.save(update_fields=["is_active", "updated_at"])
+        after = _product_snapshot(product)
+        action = "product.activated" if is_active else "product.deactivated"
+        AuditService.record(
+            action=action,
+            entity_type="Product",
+            entity_id=str(product.pk),
+            summary=f"Product {action.split('.')[1]}: {product.product_code}",
+            before=before,
+            after=after,
+            request=request,
+            actor=_actor(request),
+        )
+    return product
+
+
+class ProductService:
+    """Write operations for Product with audit entries in the same transaction."""
+
+    @classmethod
+    def create_product_with_audit(cls, serializer, request):
+        return create_product_with_audit(serializer, request)
+
+    @classmethod
+    def update_product_with_audit(cls, instance, serializer, request):
+        return update_product_with_audit(instance, serializer, request)
+
+    @classmethod
+    def set_product_active_with_audit(cls, product: Product, is_active: bool, request):
+        return set_product_active_with_audit(product, is_active, request)

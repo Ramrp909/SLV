@@ -14,10 +14,3 @@ class StockError(Exception):
         self.code = code
         self.message = message
         self.fields = fields or {}
-
-
-class CostingNotImplementedError(NotImplementedError):
-    """Raised by StockService for costing paths deferred to T-302."""
-
-    def __init__(self, message: str = "pending T-302"):
-        super().__init__(message)

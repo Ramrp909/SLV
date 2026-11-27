@@ -32,8 +32,8 @@ from apps.catalog.models import Company, PackUnit, Product
 from apps.catalog.serializers import ProductSerializer
 from apps.catalog.services import ProductService, has_stock_history
 from apps.core.models import AppSettings, AuditLog
-from apps.stock.costing import COSTING_PENDING_TYPES, opening_average, outflow_unit_cost
-from apps.stock.exceptions import CostingNotImplementedError, StockError
+from apps.stock.costing import opening_average, outflow_unit_cost
+from apps.stock.exceptions import StockError
 from apps.stock.models import MovementType, StockMovement
 from apps.stock.services import MovementRequest, StockService
 
@@ -115,12 +115,6 @@ class TestCosting(TestCase):
     def test_opening_average_quantises_to_4_dp(self):
         self.assertEqual(opening_average(Decimal("100.00005")), Decimal("100.0001"))
         self.assertEqual(opening_average(Decimal("100")), Decimal("100.0000"))
-
-    def test_pending_types_list(self):
-        self.assertEqual(
-            COSTING_PENDING_TYPES,
-            ["PURCHASE", "SALE_RETURN", "CANCEL_REVERSAL", "PURCHASE_RETURN", "ADJ_IN"],
-        )
 
 
 class TestStockMovementModel(TestCase):
@@ -736,34 +730,6 @@ class TestStockServiceOpensAndSales(TestCase):
         self.assertEqual(self.product.avg_buying_price, Decimal("100.5555"))
         last = StockMovement.objects.last()
         self.assertEqual(last.avg_cost_after, Decimal("100.5555"))
-
-
-class TestStockServicePendingTypes(TestCase):
-    """Types deferred to T-302 raise CostingNotImplementedError and write nothing."""
-
-    def setUp(self):
-        self.product = _product(product_code="PD-1")
-
-    def test_pending_types_raise_and_write_nothing(self):
-        for movement_type in COSTING_PENDING_TYPES:
-            with self.subTest(movement_type=movement_type):
-                with self.assertRaises(CostingNotImplementedError) as cm:
-                    with transaction.atomic():
-                        StockService.apply_movements(
-                            [
-                                _movement(
-                                    self.product.id,
-                                    movement_type,
-                                    Decimal("5"),
-                                    TODAY,
-                                    unit_cost=Decimal("100"),
-                                )
-                            ]
-                        )
-                self.assertEqual(str(cm.exception), "pending T-302")
-        self.assertEqual(StockMovement.objects.count(), 0)
-        self.product.refresh_from_db()
-        self.assertEqual(self.product.qty_on_hand, Decimal("0"))
 
 
 class TestStockServiceBatch(TestCase):

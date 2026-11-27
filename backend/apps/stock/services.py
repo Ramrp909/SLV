@@ -12,9 +12,10 @@ All affected product rows are locked once with select_for_update, ordered by
 primary key (fixed order, deadlock-safe), and the requests are processed
 sequentially in the order given against the running state of each locked row.
 
-Weighted-average costing for inflows (PURCHASE, SALE_RETURN, CANCEL_REVERSAL,
-PURCHASE_RETURN, ADJ_IN) is pending T-302: those types raise
-CostingNotImplementedError("pending T-302").
+Weighted-average costing for all movement types is implemented in
+``apps/stock/costing.py`` (T-302): PURCHASE, SALE_RETURN, CANCEL_REVERSAL,
+ADJ_IN and PURCHASE_RETURN revalue the running average; SALE and ADJ_OUT leave
+it unchanged.
 
 No audit entries are written per movement: the business document that causes
 the movement writes one audit entry for the whole document.
@@ -31,8 +32,13 @@ from django.utils import timezone
 
 from apps.catalog.models import Product
 from apps.core.models import AppSettings
-from apps.stock.costing import COSTING_PENDING_TYPES, opening_average, outflow_unit_cost
-from apps.stock.exceptions import CostingNotImplementedError, StockError
+from apps.stock.costing import (
+    after_purchase,
+    after_purchase_return,
+    opening_average,
+    outflow_unit_cost,
+)
+from apps.stock.exceptions import StockError
 from apps.stock.models import MovementType, StockMovement
 
 _INFLOW_TYPES = frozenset(
@@ -44,7 +50,14 @@ _INFLOW_TYPES = frozenset(
         MovementType.CANCEL_REVERSAL,
     }
 )
-_OUTFLOW_TYPES = frozenset({MovementType.SALE, MovementType.PURCHASE_RETURN, MovementType.ADJ_OUT})
+_OUTFLOW_TYPES = frozenset({MovementType.SALE, MovementType.ADJ_OUT})
+
+# Stock column limits (see apps/stock/models.py): quantity Decimal(10,3) fits
+# [-9999999.999, 9999999.999]; unit_cost / average Decimal(14,4) fits
+# [-9999999999.9999, 9999999999.9999]. Any result outside these bounds is
+# rejected with StockError before anything is written.
+MAX_QTY = Decimal("9999999.999")
+MAX_COST = Decimal("9999999999.9999")
 
 
 @dataclass
@@ -142,6 +155,12 @@ class StockService:
                 "quantity must have at most 3 decimal places",
                 fields={"quantity": "at most 3 decimal places"},
             )
+        if request.quantity > MAX_QTY:
+            raise StockError(
+                VALIDATION_ERROR,
+                "value too large",
+                fields={"quantity": "value too large"},
+            )
         request.quantity = q3(request.quantity)
         if isinstance(request.movement_date, datetime) or not isinstance(
             request.movement_date, date
@@ -187,15 +206,30 @@ class StockService:
         avg_before = st["avg"]
         magnitude = request.quantity
 
-        if request.movement_type in COSTING_PENDING_TYPES:
-            # Deferred to T-302; write nothing.
-            raise CostingNotImplementedError("pending T-302")
-
         if request.movement_type == MovementType.OPENING:
             new_qty, new_avg, unit_cost, avg_cost_after = cls._process_opening(
                 pid, st, qty_before, avg_before, request
             )
             signed_qty = new_qty
+        elif request.movement_type == MovementType.PURCHASE_RETURN:
+            new_qty, new_avg, unit_cost, avg_cost_after = cls._process_purchase_return(
+                st, qty_before, avg_before, request
+            )
+            signed_qty = -magnitude
+        elif request.movement_type in (
+            MovementType.PURCHASE,
+            MovementType.SALE_RETURN,
+            MovementType.CANCEL_REVERSAL,
+        ):
+            new_qty, new_avg, unit_cost, avg_cost_after = cls._process_revaluing_inflow(
+                pid, st, qty_before, avg_before, request
+            )
+            signed_qty = magnitude
+        elif request.movement_type == MovementType.ADJ_IN:
+            new_qty, new_avg, unit_cost, avg_cost_after = cls._process_adj_in(
+                pid, st, qty_before, avg_before, request
+            )
+            signed_qty = magnitude
         elif request.movement_type in _OUTFLOW_TYPES:
             new_qty, new_avg, unit_cost, avg_cost_after = cls._process_outflow(
                 st, qty_before, avg_before, request
@@ -206,6 +240,23 @@ class StockService:
                 VALIDATION_ERROR,
                 f"Unknown movement type {request.movement_type}",
                 fields={"movement_type": "unknown movement type"},
+            )
+
+        if new_qty > MAX_QTY:
+            raise StockError(
+                VALIDATION_ERROR,
+                "value too large",
+                fields={"quantity": "value too large"},
+            )
+        if (
+            (new_avg is not None and new_avg > MAX_COST)
+            or (unit_cost is not None and unit_cost > MAX_COST)
+            or (avg_cost_after is not None and avg_cost_after > MAX_COST)
+        ):
+            raise StockError(
+                VALIDATION_ERROR,
+                "value too large",
+                fields={"unit_cost": "value too large"},
             )
 
         if new_qty < 0 and not allow_negative_stock:
@@ -238,11 +289,19 @@ class StockService:
         movement.avg_before = avg_before
 
         # Single UPDATE of only the stock columns; never save().
-        Product.objects.filter(pk=pid).update(
-            qty_on_hand=new_qty,
-            avg_buying_price=new_avg,
-            updated_at=timezone.now(),
-        )
+        if request.movement_type == MovementType.PURCHASE:
+            Product.objects.filter(pk=pid).update(
+                qty_on_hand=new_qty,
+                avg_buying_price=new_avg,
+                last_buying_price=unit_cost,
+                updated_at=timezone.now(),
+            )
+        else:
+            Product.objects.filter(pk=pid).update(
+                qty_on_hand=new_qty,
+                avg_buying_price=new_avg,
+                updated_at=timezone.now(),
+            )
         st["qty"] = new_qty
         st["avg"] = new_avg
         return movement
@@ -297,3 +356,111 @@ class StockService:
         new_avg = avg_before  # outflows never change the average
         unit_cost = outflow_unit_cost(avg_before)
         return new_qty, new_avg, unit_cost, unit_cost
+
+    @classmethod
+    def _validate_unit_cost(cls, request: MovementRequest, required: bool) -> Decimal | None:
+        """Validate ``unit_cost`` for types that accept it: Decimal, >= 0, at most 4 decimals.
+
+        Rejects more than 4 decimals; never rounds silently.
+        """
+        if request.unit_cost is None:
+            if required:
+                raise StockError(
+                    VALIDATION_ERROR,
+                    f"unit_cost is required for {request.movement_type}",
+                    fields={"unit_cost": "required"},
+                )
+            return None
+        if not isinstance(request.unit_cost, Decimal):
+            raise StockError(
+                VALIDATION_ERROR,
+                "unit_cost must be a Decimal",
+                fields={"unit_cost": "must be a Decimal"},
+            )
+        if request.unit_cost < 0:
+            raise StockError(
+                VALIDATION_ERROR,
+                "unit_cost must be zero or more",
+                fields={"unit_cost": "must be >= 0"},
+            )
+        if request.unit_cost.as_tuple().exponent < -4:
+            raise StockError(
+                VALIDATION_ERROR,
+                "unit_cost must have at most 4 decimal places",
+                fields={"unit_cost": "at most 4 decimal places"},
+            )
+        if request.unit_cost > MAX_COST:
+            raise StockError(
+                VALIDATION_ERROR,
+                "value too large",
+                fields={"unit_cost": "value too large"},
+            )
+        return q4(request.unit_cost)
+
+    @classmethod
+    def _process_revaluing_inflow(
+        cls,
+        pid: int,
+        st: dict,
+        qty_before: Decimal,
+        avg_before: Decimal | None,
+        request: MovementRequest,
+    ):
+        """PURCHASE, SALE_RETURN and CANCEL_REVERSAL: revalue at the incoming cost."""
+        unit_cost = cls._validate_unit_cost(request, required=True)
+        new_avg = after_purchase(qty_before, avg_before, request.quantity, unit_cost)
+        new_qty = q3(qty_before + request.quantity)
+        return new_qty, new_avg, unit_cost, new_avg
+
+    @classmethod
+    def _process_adj_in(
+        cls,
+        pid: int,
+        st: dict,
+        qty_before: Decimal,
+        avg_before: Decimal | None,
+        request: MovementRequest,
+    ):
+        """ADJ_IN: reason required; unit_cost only to seed a null average."""
+        if not request.reason.strip():
+            raise StockError(
+                VALIDATION_ERROR,
+                "reason is required for an adjustment in",
+                fields={"reason": "required"},
+            )
+        if avg_before is None:
+            unit_cost = cls._validate_unit_cost(request, required=True)
+            movement_unit_cost = unit_cost
+            new_avg = q4(unit_cost)
+        else:
+            unit_cost = cls._validate_unit_cost(request, required=False)
+            if unit_cost is not None:
+                raise StockError(
+                    VALIDATION_ERROR,
+                    "unit_cost must not be supplied when the product already has an average",
+                    fields={"unit_cost": "must not be supplied"},
+                )
+            movement_unit_cost = avg_before
+            new_avg = avg_before
+        new_qty = q3(qty_before + request.quantity)
+        return new_qty, new_avg, movement_unit_cost, new_avg
+
+    @classmethod
+    def _process_purchase_return(
+        cls,
+        st: dict,
+        qty_before: Decimal,
+        avg_before: Decimal | None,
+        request: MovementRequest,
+    ):
+        """PURCHASE_RETURN: stock out at the return cost (provisional, 13.14)."""
+        unit_cost = cls._validate_unit_cost(request, required=False)
+        if avg_before is None and unit_cost is None:
+            new_avg = None
+            movement_unit_cost = None
+        else:
+            return_cost = unit_cost if unit_cost is not None else avg_before
+            new_avg = after_purchase_return(qty_before, avg_before, request.quantity, return_cost)
+            movement_unit_cost = unit_cost
+        new_qty = q3(qty_before - request.quantity)
+        return new_qty, new_avg, movement_unit_cost, new_avg

@@ -30,6 +30,13 @@ Single-owner paint and hardware shop: inventory, GST invoicing, customers and du
 - Standard error format: `{ "code": "...", "message": "...", "fields": {...} }`. Lists use `page` and `page_size`; money returned as strings.
 - Do not add new dependencies, rename existing models/fields, or change the database schema outside the current task without asking.
 - **Never write absolute paths, drive letters or machine-specific folders in code, tests or CI. Use BASE_DIR, pathlib and tempfile, and make sure tests pass on both Windows and Linux.**
+- **Stock quantity and average cost** (Product.qty_on_hand, avg_buying_price,
+  last_buying_price) change ONLY through StockService in
+  apps/stock/services.py. Every Product.save() in an update path must pass
+  explicit update_fields. Never write those fields anywhere else, in code or
+  tests, except by creating test fixtures through StockService or, where a test
+  must simulate stock history without the engine, with a queryset update and a
+  comment.
 
 ## How to work on a task
 1. Read the task prompt and the attached blueprint sections only. Restate the goal in two lines.
@@ -38,6 +45,7 @@ Single-owner paint and hardware shop: inventory, GST invoicing, customers and du
 4. Reply with: files created or changed, commands run with results, anything left undone, any blueprint conflict found.
 5. Keep changes inside the task scope; no unrelated refactoring.
 6. Never rewrite or 'restore' an existing file from memory. Before changing a file, read it; change only what the task needs. At the end of every task run git --no-pager diff --stat and report any file outside the task's folder. A large number of deleted lines in a file you did not mean to change is a mistake to undo, not to explain. Use git --no-pager for all git commands.
+7. Follow docs/testing-standard.md for every new test: flat files named test_<feature>_<kind>.py, a pytestmark marker per file, helpers from backend/testsupport, pure logic tested without the database, no new tests in the legacy tests.py files.
 
 ## Safety
 - Use **fake sample data only**. Never put real customer, supplier, price or business data into prompts or fixtures.

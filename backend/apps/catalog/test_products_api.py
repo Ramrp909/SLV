@@ -540,8 +540,9 @@ class TestProductPackChange(TestCase):
     def test_change_rejected_when_stock_history(self):
         company = _company()
         product = _product(company=company, product_code="PACK-1")
-        product.qty_on_hand = Decimal("5")
-        product.save(update_fields=["qty_on_hand"])
+        # simulates stock history; the stock engine writes this field in production
+        Product.objects.filter(pk=product.pk).update(qty_on_hand=Decimal("5"))
+        product.refresh_from_db()
         self.assertTrue(has_stock_history(product))
         response = self.client.patch(_detail_url(product.id), {"pack_size": "10"}, format="json")
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST, response.content)
@@ -552,8 +553,9 @@ class TestProductPackChange(TestCase):
     def test_change_rejected_when_avg_buying_price_set(self):
         company = _company()
         product = _product(company=company, product_code="PACK-2")
-        product.avg_buying_price = Decimal("100")
-        product.save(update_fields=["avg_buying_price"])
+        # simulates stock history; the stock engine writes this field in production
+        Product.objects.filter(pk=product.pk).update(avg_buying_price=Decimal("100"))
+        product.refresh_from_db()
         self.assertTrue(has_stock_history(product))
         response = self.client.patch(_detail_url(product.id), {"pack_unit": "ML"}, format="json")
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST, response.content)
@@ -576,8 +578,9 @@ class TestProductPackChange(TestCase):
         product = _product(
             company=company, product_code="PACK-4", pack_size=Decimal("20"), pack_unit=PackUnit.LTR
         )
-        product.qty_on_hand = Decimal("5")
-        product.save(update_fields=["qty_on_hand"])
+        # simulates stock history; the stock engine writes this field in production
+        Product.objects.filter(pk=product.pk).update(qty_on_hand=Decimal("5"))
+        product.refresh_from_db()
         response = self.client.put(
             _detail_url(product.id),
             {

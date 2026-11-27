@@ -9,6 +9,7 @@ from decimal import ROUND_HALF_UP, Decimal
 
 # Quantization constants
 Q2_QUANTIZER = Decimal("0.01")
+Q3_QUANTIZER = Decimal("0.001")
 Q4_QUANTIZER = Decimal("0.0001")
 
 
@@ -60,6 +61,21 @@ def q4(value) -> Decimal:
         Decimal: Value quantized to 0.0001.
     """
     return D(value).quantize(Q4_QUANTIZER, rounding=ROUND_HALF_UP)
+
+
+def q3(value) -> Decimal:
+    """
+    Quantize a Decimal to 3 decimal places (0.001) using ROUND_HALF_UP.
+
+    Quantity precision for stock movements.
+
+    Args:
+        value: A string, int, or Decimal.
+
+    Returns:
+        Decimal: Value quantized to 0.001.
+    """
+    return D(value).quantize(Q3_QUANTIZER, rounding=ROUND_HALF_UP)
 
 
 def safe_sum(iterable) -> Decimal:

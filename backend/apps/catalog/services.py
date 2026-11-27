@@ -148,13 +148,19 @@ PRODUCT_AUDIT_FIELDS = [
 def has_stock_history(product: Product) -> bool:
     """T-203: stock history exists when any stock field has been touched.
 
-    T-301 will extend this to consult stock_movements.
+    T-301: also true when the product has at least one StockMovement, even if
+    the stock fields are null or zero. Imported here to avoid a circular
+    import (apps.stock.models does not import this module).
     """
-    return (
+    if (
         product.qty_on_hand != 0
         or product.avg_buying_price is not None
         or product.last_buying_price is not None
-    )
+    ):
+        return True
+    from apps.stock.models import StockMovement
+
+    return StockMovement.objects.filter(product=product).exists()
 
 
 def _actor(request):
@@ -191,14 +197,25 @@ def create_product_with_audit(serializer, request):
 
 
 def update_product_with_audit(instance, serializer, request):
-    """Update a product; record product.updated only if something changed."""
+    """Update a product; record product.updated only if something changed.
+
+    Only the validated fields plus updated_at are written (explicit
+    update_fields). A stale copy of the product must never be allowed to
+    overwrite qty_on_hand / avg_buying_price / last_buying_price that
+    StockService may have written through another row copy, so those fields
+    are never part of an update unless the caller explicitly validated them
+    (they are read-only in the serializer).
+    """
     validated_data = serializer.validated_data or {}
     if not validated_data:
-        return serializer.save()
+        return instance
 
     before = _product_snapshot(instance)
     with transaction.atomic():
-        instance = serializer.save()
+        update_fields = set(validated_data) | {"updated_at"}
+        for field, value in validated_data.items():
+            setattr(instance, field, value)
+        instance.save(update_fields=sorted(update_fields))
         instance.full_clean()
         after = _product_snapshot(instance)
         if before == after:

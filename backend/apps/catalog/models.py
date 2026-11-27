@@ -302,6 +302,36 @@ class Product(models.Model):
                 setattr(self, field, canonicalize_label(field, value))
         if self.hsn_code:
             self.hsn_code = str(self.hsn_code).strip()
+
+        update_fields = kwargs.get("update_fields")
+        stock_fields = {"qty_on_hand", "avg_buying_price", "last_buying_price"}
+
+        if update_fields is not None:
+            requested_stock = [f for f in update_fields if f in stock_fields]
+            if requested_stock:
+                raise ValueError(
+                    "Stock fields "
+                    + ", ".join(sorted(requested_stock))
+                    + " may only be written by StockService; "
+                    "use StockService.apply_movements() instead of Product.save()."
+                )
+
+        if (
+            self.pk is not None
+            and not self._state.adding
+            and not kwargs.get("force_insert", False)
+            and update_fields is None
+        ):
+            # Plain save() on an existing row: write only editable concrete
+            # fields plus updated_at, so a stale copy cannot overwrite the
+            # stock fields that StockService manages.
+            editable_fields = [
+                f.name
+                for f in self._meta.concrete_fields
+                if f.editable and f.name not in ("id",) and f.name != "updated_at"
+            ] + ["updated_at"]
+            kwargs["update_fields"] = sorted(set(editable_fields))
+
         super().save(*args, **kwargs)
 
     @property

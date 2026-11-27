@@ -4,7 +4,7 @@ from decimal import Decimal
 
 from django.test import TestCase
 
-from common.money import D, q2, q4, safe_sum
+from common.money import D, q2, q3, q4, safe_sum
 
 
 class TestD(TestCase):
@@ -58,6 +58,22 @@ class TestQ4(TestCase):
 
     def test_already_quantized(self):
         assert q4(Decimal("1.2345")) == Decimal("1.2345")
+
+
+class TestQ3(TestCase):
+    """Tests for q3() - quantize to 0.001 with ROUND_HALF_UP (quantity precision)."""
+
+    def test_half_up_case(self):
+        assert q3(Decimal("1.0005")) == Decimal("1.001")
+
+    def test_half_up_down_case(self):
+        assert q3(Decimal("1.0004")) == Decimal("1.000")
+
+    def test_already_quantized(self):
+        assert q3(Decimal("5.500")) == Decimal("5.500")
+
+    def test_from_int(self):
+        assert q3(5) == Decimal("5.000")
 
 
 class TestSafeSum(TestCase):

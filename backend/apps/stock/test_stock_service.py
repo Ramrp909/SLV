@@ -1147,7 +1147,10 @@ class TestStockFieldWriteScan(TestCase):
 
                 # setattr/getattr as built-in Name or as attribute
                 is_setattr_getattr = False
-                if isinstance(node.func, ast.Attribute) and node.func.attr in ("setattr", "getattr"):
+                if isinstance(node.func, ast.Attribute) and node.func.attr in (
+                    "setattr",
+                    "getattr",
+                ):
                     is_setattr_getattr = True
                     func_attr = node.func.attr
                 elif isinstance(node.func, ast.Name) and node.func.id in ("setattr", "getattr"):
@@ -1224,10 +1227,7 @@ class TestStockFieldWriteScan(TestCase):
                 text = node.value
                 # Rule (e): only flag string constants that look like real SQL
                 # UPDATE statements (not docstrings or comments mentioning update).
-                if (
-                    re_compile(r"\bUPDATE\s+\w+\s+SET\b").search(text)
-                    and "product" in text.lower()
-                ):
+                if re_compile(r"\bUPDATE\s+\w+\s+SET\b").search(text) and "product" in text.lower():
                     for sf in stock_fields:
                         if sf in text:
                             violations.append(
@@ -1438,7 +1438,11 @@ class TestNoNowInStockApp(TestCase):
                         self.violations.append(
                             (node.lineno, f"import alias timezone as {alias.asname!r}")
                         )
-                    if node.module == "datetime" and alias.name in ("date", "datetime") and alias.asname:
+                    if (
+                        node.module == "datetime"
+                        and alias.name in ("date", "datetime")
+                        and alias.asname
+                    ):
                         self.violations.append(
                             (node.lineno, f"import alias {alias.name} as {alias.asname!r}")
                         )
